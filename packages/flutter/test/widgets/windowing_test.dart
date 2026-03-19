@@ -19,6 +19,7 @@ import 'package:flutter/src/widgets/_window.dart'
         SatelliteWindowController,
         TooltipWindow,
         TooltipWindowController,
+        WindowDecorations,
         WindowScope,
         WindowingOwner,
         createDefaultWindowingOwner;
@@ -281,6 +282,64 @@ void main() {
     group('isWindowingEnabled is true', () {
       setUp(() {
         isWindowingEnabled = true;
+      });
+
+      test('WindowDecorations.all enables every decoration', () {
+        const WindowDecorations all = WindowDecorations.all;
+        expect(all.hasTitleBar, isTrue);
+        expect(all.hasBorder, isTrue);
+        expect(all.hasCloseButton, isTrue);
+        expect(all.hasMinimizeButton, isTrue);
+        expect(all.hasMaximizeButton, isTrue);
+        expect(all.isResizable, isTrue);
+        expect(all.hasShadow, isTrue);
+        // ignore: use_named_constants, intentionally verifying .all == default ctor
+        expect(all, equals(const WindowDecorations()));
+        // ignore: use_named_constants
+        expect(all.hashCode, equals(const WindowDecorations().hashCode));
+      });
+
+      test('WindowDecorations.none disables every decoration', () {
+        const WindowDecorations none = WindowDecorations.none;
+        expect(none.hasTitleBar, isFalse);
+        expect(none.hasBorder, isFalse);
+        expect(none.hasCloseButton, isFalse);
+        expect(none.hasMinimizeButton, isFalse);
+        expect(none.hasMaximizeButton, isFalse);
+        expect(none.isResizable, isFalse);
+        expect(none.hasShadow, isFalse);
+        expect(none, isNot(equals(WindowDecorations.all)));
+      });
+
+      test('WindowDecorations equality distinguishes each field', () {
+        expect(
+          const WindowDecorations(hasTitleBar: false),
+          isNot(equals(WindowDecorations.all)),
+        );
+        expect(
+          const WindowDecorations(hasBorder: false),
+          isNot(equals(WindowDecorations.all)),
+        );
+        expect(
+          const WindowDecorations(hasCloseButton: false),
+          isNot(equals(WindowDecorations.all)),
+        );
+        expect(
+          const WindowDecorations(hasMinimizeButton: false),
+          isNot(equals(WindowDecorations.all)),
+        );
+        expect(
+          const WindowDecorations(hasMaximizeButton: false),
+          isNot(equals(WindowDecorations.all)),
+        );
+        expect(
+          const WindowDecorations(isResizable: false),
+          isNot(equals(WindowDecorations.all)),
+        );
+        expect(
+          const WindowDecorations(hasShadow: false),
+          isNot(equals(WindowDecorations.all)),
+        );
       });
 
       testWidgets('RegularWindow does not throw', (WidgetTester tester) async {

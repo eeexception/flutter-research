@@ -207,10 +207,11 @@ std::unique_ptr<HostWindow> HostWindow::CreateRegularWindow(
     FlutterWindowsEngine* engine,
     const WindowSizeRequest& preferred_size,
     const WindowConstraints& preferred_constraints,
-    LPCWSTR title) {
+    LPCWSTR title,
+    const WindowDecorationsRequest& decorations) {
   return std::unique_ptr<HostWindow>(new HostWindowRegular(
       window_manager, engine, preferred_size,
-      FromWindowConstraints(preferred_constraints), title));
+      FromWindowConstraints(preferred_constraints), title, decorations));
 }
 
 std::unique_ptr<HostWindow> HostWindow::CreateDialogWindow(
@@ -308,6 +309,14 @@ void HostWindow::InitializeFlutterView(
                SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
 
   UpdateTheme(window_handle_);
+
+  if (!params.has_shadow) {
+    // Disable the DWM-drawn shadow and non-client rendering so that a window
+    // created without decorations does not still receive a system shadow.
+    DWMNCRENDERINGPOLICY policy = DWMNCRP_DISABLED;
+    DwmSetWindowAttribute(window_handle_, DWMWA_NCRENDERING_POLICY, &policy,
+                          sizeof(policy));
+  }
 
   SetChildContent(view_controller_->view()->GetWindowHandle(), window_handle_);
 

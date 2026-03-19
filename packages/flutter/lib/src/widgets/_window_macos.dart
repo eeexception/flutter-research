@@ -80,12 +80,14 @@ class WindowingOwnerMacOS extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations = WindowDecorations.all,
   }) {
     final res = RegularWindowControllerMacOS(
       owner: this,
       delegate: delegate,
       preferredSize: preferredSize,
       title: title,
+      decorations: decorations,
     );
     _activeControllers.add(res);
     return res;
@@ -376,6 +378,7 @@ class RegularWindowControllerMacOS extends RegularWindowController with _WindowC
     required Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations = WindowDecorations.all,
   }) : _delegate = delegate,
        super.empty() {
     _initController(owner);
@@ -383,6 +386,7 @@ class RegularWindowControllerMacOS extends RegularWindowController with _WindowC
     final int viewId = _MacOSPlatformInterface.createRegularWindow(
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
+      decorations: decorations,
       onShouldClose: _onShouldClose.nativeFunction,
       onWillClose: _onWillClose.nativeFunction,
       onNotifyListeners: _onResize.nativeFunction,
@@ -609,6 +613,43 @@ class DialogWindowControllerMacOS extends DialogWindowController with _WindowCon
   final BaseWindowController? parent;
 }
 
+/// FFI payload for [WindowDecorations].
+///
+/// Keep this struct in sync with `FlutterWindowDecorations` declared in
+/// engine/src/flutter/shell/platform/darwin/macos/framework/Source/FlutterWindowController.h.
+final class _WindowDecorations extends Struct {
+  @Bool()
+  external bool hasTitleBar;
+
+  @Bool()
+  external bool hasBorder;
+
+  @Bool()
+  external bool hasCloseButton;
+
+  @Bool()
+  external bool hasMinimizeButton;
+
+  @Bool()
+  external bool hasMaximizeButton;
+
+  @Bool()
+  external bool isResizable;
+
+  @Bool()
+  external bool hasShadow;
+
+  void from(WindowDecorations decorations) {
+    hasTitleBar = decorations.hasTitleBar;
+    hasBorder = decorations.hasBorder;
+    hasCloseButton = decorations.hasCloseButton;
+    hasMinimizeButton = decorations.hasMinimizeButton;
+    hasMaximizeButton = decorations.hasMaximizeButton;
+    isResizable = decorations.isResizable;
+    hasShadow = decorations.hasShadow;
+  }
+}
+
 final class _WindowCreationRequest extends Struct {
   @Bool()
   external bool hasSize;
@@ -634,6 +675,8 @@ final class _WindowCreationRequest extends Struct {
     >
   >
   onGetWindowPosition;
+
+  external _WindowDecorations decorations;
 }
 
 final class _Size extends Struct {
@@ -737,6 +780,7 @@ class _MacOSPlatformInterface {
   static int createRegularWindow({
     required Size? preferredSize,
     BoxConstraints? preferredConstraints,
+    required WindowDecorations decorations,
     required Pointer<NativeFunction<Void Function()>> onShouldClose,
     required Pointer<NativeFunction<Void Function()>> onWillClose,
     required Pointer<NativeFunction<Void Function()>> onNotifyListeners,
@@ -745,6 +789,8 @@ class _MacOSPlatformInterface {
       ..ref.onShouldClose = onShouldClose
       ..ref.onWillClose = onWillClose
       ..ref.onNotifyListeners = onNotifyListeners;
+
+    request.ref.decorations.from(decorations);
 
     if (preferredSize != null) {
       request.ref

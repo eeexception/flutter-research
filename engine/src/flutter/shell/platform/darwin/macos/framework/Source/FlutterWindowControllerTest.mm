@@ -348,4 +348,94 @@ TEST_F(FlutterWindowControllerTest, ViewMetricsRespectPositionCallbackConstraint
   EXPECT_LE(maxSize.width, 500);
   EXPECT_LE(maxSize.height, 400);
 }
+
+TEST_F(FlutterWindowControllerTest, RegularWindowDefaultDecorations) {
+  IsolateScope isolate_scope(isolate());
+  FlutterEngine* engine = GetFlutterEngine();
+  int64_t engineId = reinterpret_cast<int64_t>(engine);
+
+  FlutterWindowCreationRequest request{
+      .has_size = true,
+      .size = {.width = 800, .height = 600},
+      .on_should_close = [] {},
+      .on_will_close = [] {},
+      .notify_listeners = [] {},
+  };
+
+  int64_t viewId = InternalFlutter_WindowController_CreateRegularWindow(engineId, &request);
+  FlutterViewController* viewController = [engine viewControllerForIdentifier:viewId];
+  NSWindow* window = viewController.view.window;
+
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskTitled);
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskClosable);
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskMiniaturizable);
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskResizable);
+  EXPECT_TRUE(window.hasShadow);
+}
+
+TEST_F(FlutterWindowControllerTest, RegularWindowNoDecorations) {
+  IsolateScope isolate_scope(isolate());
+  FlutterEngine* engine = GetFlutterEngine();
+  int64_t engineId = reinterpret_cast<int64_t>(engine);
+
+  FlutterWindowCreationRequest request{
+      .has_size = true,
+      .size = {.width = 800, .height = 600},
+      .on_should_close = [] {},
+      .on_will_close = [] {},
+      .notify_listeners = [] {},
+      .decorations =
+          {
+              .has_title_bar = false,
+              .has_border = false,
+              .has_close_button = false,
+              .has_minimize_button = false,
+              .has_maximize_button = false,
+              .is_resizable = false,
+              .has_shadow = false,
+          },
+  };
+
+  int64_t viewId = InternalFlutter_WindowController_CreateRegularWindow(engineId, &request);
+  FlutterViewController* viewController = [engine viewControllerForIdentifier:viewId];
+  NSWindow* window = viewController.view.window;
+
+  EXPECT_EQ(window.styleMask, NSWindowStyleMaskBorderless);
+  EXPECT_FALSE(window.hasShadow);
+}
+
+TEST_F(FlutterWindowControllerTest, RegularWindowCustomDecorations) {
+  IsolateScope isolate_scope(isolate());
+  FlutterEngine* engine = GetFlutterEngine();
+  int64_t engineId = reinterpret_cast<int64_t>(engine);
+
+  FlutterWindowCreationRequest request{
+      .has_size = true,
+      .size = {.width = 800, .height = 600},
+      .on_should_close = [] {},
+      .on_will_close = [] {},
+      .notify_listeners = [] {},
+      .decorations =
+          {
+              .has_title_bar = true,
+              .has_border = true,
+              .has_close_button = true,
+              .has_minimize_button = false,
+              .has_maximize_button = false,
+              .is_resizable = false,
+              .has_shadow = true,
+          },
+  };
+
+  int64_t viewId = InternalFlutter_WindowController_CreateRegularWindow(engineId, &request);
+  FlutterViewController* viewController = [engine viewControllerForIdentifier:viewId];
+  NSWindow* window = viewController.view.window;
+
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskTitled);
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskClosable);
+  EXPECT_FALSE(window.styleMask & NSWindowStyleMaskMiniaturizable);
+  EXPECT_FALSE(window.styleMask & NSWindowStyleMaskResizable);
+  EXPECT_TRUE(window.hasShadow);
+  EXPECT_TRUE([window standardWindowButton:NSWindowZoomButton].hidden);
+}
 }  // namespace flutter::testing

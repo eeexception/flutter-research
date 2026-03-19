@@ -99,6 +99,173 @@ sealed class BaseWindowController extends ChangeNotifier {
   }
 }
 
+/// Describes which system-drawn decorations a window should have.
+///
+/// Decorations are the visual and interactive elements that the operating
+/// system draws around a window's content, such as the title bar, window
+/// border, window buttons (close, minimize, and maximize), and shadow.
+///
+/// Applications that want to draw their own window chrome can selectively
+/// disable individual decorations, or disable all of them by using
+/// [WindowDecorations.none].
+///
+/// Not every option is supported independently on every platform. When a
+/// decoration cannot be controlled individually on a particular platform, the
+/// embedder will approximate the requested appearance as closely as possible.
+/// For example, on Linux the window manager draws the title bar, border, and
+/// window buttons together as a single unit, so disabling the title bar will
+/// also remove the border and window buttons.
+///
+/// {@macro flutter.widgets.windowing.experimental}
+///
+/// See also:
+///
+///  * [RegularWindowController], which accepts a [WindowDecorations] to
+///    configure the native window it creates.
+@immutable
+@internal
+final class WindowDecorations {
+  /// Creates a description of which system decorations a window should have.
+  ///
+  /// All decorations default to `true`, so a window created with a default
+  /// [WindowDecorations] is fully decorated.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  const WindowDecorations({
+    this.hasTitleBar = true,
+    this.hasBorder = true,
+    this.hasCloseButton = true,
+    this.hasMinimizeButton = true,
+    this.hasMaximizeButton = true,
+    this.isResizable = true,
+    this.hasShadow = true,
+  });
+
+  /// Whether the window has a system-drawn title bar.
+  ///
+  /// On some platforms, removing the title bar also removes the system-drawn
+  /// window buttons.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  final bool hasTitleBar;
+
+  /// Whether the window has a system-drawn border.
+  ///
+  /// On some platforms, removing the title bar also removes the system-drawn
+  /// border.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  final bool hasBorder;
+
+  /// Whether the window has a system-drawn close button.
+  ///
+  /// On some platforms, this might not be honored independently of
+  /// [hasTitleBar].
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  final bool hasCloseButton;
+
+  /// Whether the window has a system-drawn minimize button.
+  ///
+  /// On some platforms, this might not be honored independently of
+  /// [hasTitleBar].
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  final bool hasMinimizeButton;
+
+  /// Whether the window has a system-drawn maximize button.
+  ///
+  /// On some platforms, this might not be honored independently of
+  /// [hasTitleBar].
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  final bool hasMaximizeButton;
+
+  /// Whether the user can resize the window by dragging its edges or
+  /// corners.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  final bool isResizable;
+
+  /// Whether the system draws a shadow behind the window.
+  ///
+  /// On some platforms, this might not be honored.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  final bool hasShadow;
+
+  /// A [WindowDecorations] with every decoration enabled.
+  ///
+  /// This is the default for newly created windows.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static const WindowDecorations all = WindowDecorations();
+
+  /// A [WindowDecorations] with every decoration disabled.
+  ///
+  /// Use this when the application wants to draw all of its own window
+  /// chrome.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static const WindowDecorations none = WindowDecorations(
+    hasTitleBar: false,
+    hasBorder: false,
+    hasCloseButton: false,
+    hasMinimizeButton: false,
+    hasMaximizeButton: false,
+    isResizable: false,
+    hasShadow: false,
+  );
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    return other is WindowDecorations &&
+        other.hasTitleBar == hasTitleBar &&
+        other.hasBorder == hasBorder &&
+        other.hasCloseButton == hasCloseButton &&
+        other.hasMinimizeButton == hasMinimizeButton &&
+        other.hasMaximizeButton == hasMaximizeButton &&
+        other.isResizable == isResizable &&
+        other.hasShadow == hasShadow;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    hasTitleBar,
+    hasBorder,
+    hasCloseButton,
+    hasMinimizeButton,
+    hasMaximizeButton,
+    isResizable,
+    hasShadow,
+  );
+
+  @override
+  String toString() {
+    return 'WindowDecorations('
+        'hasTitleBar: $hasTitleBar, '
+        'hasBorder: $hasBorder, '
+        'hasCloseButton: $hasCloseButton, '
+        'hasMinimizeButton: $hasMinimizeButton, '
+        'hasMaximizeButton: $hasMaximizeButton, '
+        'isResizable: $isResizable, '
+        'hasShadow: $hasShadow)';
+  }
+}
+
 /// Delegate class for regular window controller.
 ///
 /// {@macro flutter.widgets.windowing.experimental}
@@ -218,6 +385,11 @@ abstract class RegularWindowController extends BaseWindowController {
   /// The [title] argument configures the window's initial title.
   /// If omitted, some platforms might fall back to the app's name.
   ///
+  /// The [decorations] argument describes which system-drawn decorations
+  /// the window should have, such as the title bar, border, and window
+  /// buttons. Defaults to [WindowDecorations.all]. Use
+  /// [WindowDecorations.none] to create a fully undecorated window.
+  ///
   /// The [delegate] argument can be used to listen to the window's
   /// lifecycle. For example, it can be used to save state before
   /// a window is closed.
@@ -228,6 +400,7 @@ abstract class RegularWindowController extends BaseWindowController {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations = WindowDecorations.all,
     RegularWindowControllerDelegate? delegate,
   }) {
     if (!isWindowingEnabled) {
@@ -244,6 +417,7 @@ abstract class RegularWindowController extends BaseWindowController {
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
       title: title,
+      decorations: decorations,
     );
   }
 
@@ -1152,6 +1326,7 @@ abstract class WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations = WindowDecorations.all,
   });
 
   /// Creates a [DialogWindowController] with the provided properties.
@@ -1251,6 +1426,7 @@ class _WindowingOwnerUnsupported extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations = WindowDecorations.all,
   }) {
     throw UnsupportedError(errorMessage);
   }

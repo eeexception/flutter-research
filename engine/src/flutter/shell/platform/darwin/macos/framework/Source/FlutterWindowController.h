@@ -57,6 +57,20 @@ struct FlutterWindowConstraints {
   double max_height;
 };
 
+// Describes which system-drawn decorations a window should have.
+//
+// Keep this struct in sync with `_WindowDecorations` declared in
+// packages/flutter/lib/src/widgets/_window_macos.dart.
+struct FlutterWindowDecorations {
+  bool has_title_bar = true;
+  bool has_border = true;
+  bool has_close_button = true;
+  bool has_minimize_button = true;
+  bool has_maximize_button = true;
+  bool is_resizable = true;
+  bool has_shadow = true;
+};
+
 struct FlutterWindowCreationRequest {
   bool has_size;
   struct FlutterWindowSize size;
@@ -71,6 +85,7 @@ struct FlutterWindowCreationRequest {
   FlutterWindowRect* (*on_get_window_position)(const FlutterWindowSize& child_size,
                                                const FlutterWindowRect& parent_rect,
                                                const FlutterWindowRect& output_rect);
+  FlutterWindowDecorations decorations;
 };
 
 extern "C" {

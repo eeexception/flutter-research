@@ -15,12 +15,19 @@ class HostWindowRegular : public HostWindow {
                     FlutterWindowsEngine* engine,
                     const WindowSizeRequest& preferred_size,
                     const BoxConstraints& constraints,
-                    LPCWSTR title);
+                    LPCWSTR title,
+                    const WindowDecorationsRequest& decorations);
 
  private:
   static Rect GetInitialRect(FlutterWindowsEngine* engine,
                              const WindowSizeRequest& preferred_size,
-                             const BoxConstraints& constraints);
+                             const BoxConstraints& constraints,
+                             DWORD window_style);
+
+  // Returns the Win32 window style corresponding to the requested
+  // decorations.
+  static DWORD WindowStyleForDecorations(
+      const WindowDecorationsRequest& decorations);
 };
 }  // namespace flutter
 

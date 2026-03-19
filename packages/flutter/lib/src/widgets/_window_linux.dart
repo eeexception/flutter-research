@@ -90,6 +90,7 @@ class WindowingOwnerLinux extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations = WindowDecorations.all,
     required RegularWindowControllerDelegate delegate,
   }) {
     final controller = RegularWindowControllerLinux(
@@ -98,6 +99,7 @@ class WindowingOwnerLinux extends WindowingOwner {
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
       title: title,
+      decorations: decorations,
     );
     _windows[controller.rootView.viewId] = controller._window;
     return controller;
@@ -189,6 +191,7 @@ class RegularWindowControllerLinux extends RegularWindowController {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations = WindowDecorations.all,
   }) : _owner = owner,
        _delegate = delegate,
        _window = _GtkWindow(_GtkWindowType.toplevel),
@@ -216,6 +219,26 @@ class RegularWindowControllerLinux extends RegularWindowController {
     }
     if (title != null) {
       setTitle(title);
+    }
+    // GTK cannot control the title bar, border, and window buttons
+    // independently of one another; together they are the window manager's
+    // server-side decoration. If any of these are disabled, ask GTK to
+    // remove the entire decoration. Resizability is controlled separately,
+    // and the close button has its own hint. Shadow is determined by the
+    // window manager and cannot be controlled from here.
+    final bool wantsDecoration =
+        decorations.hasTitleBar &&
+        decorations.hasBorder &&
+        decorations.hasMinimizeButton &&
+        decorations.hasMaximizeButton;
+    if (!wantsDecoration) {
+      _window.setDecorated(false);
+    }
+    if (!decorations.isResizable) {
+      _window.setResizable(false);
+    }
+    if (!decorations.hasCloseButton) {
+      _window.setDeletable(false);
     }
     final engine = _FlEngine.current();
     final view = _FlView(engine);
@@ -823,6 +846,22 @@ class _GtkWindow extends _GtkContainer {
     return _gtkWindowIsActive(instance);
   }
 
+  /// Sets whether the window should be decorated by the window manager
+  /// (with a title bar, border, and window buttons).
+  void setDecorated(bool decorated) {
+    _gtkWindowSetDecorated(instance, decorated);
+  }
+
+  /// Sets whether the user can resize the window.
+  void setResizable(bool resizable) {
+    _gtkWindowSetResizable(instance, resizable);
+  }
+
+  /// Sets whether the window should have a close button.
+  void setDeletable(bool deletable) {
+    _gtkWindowSetDeletable(instance, deletable);
+  }
+
   @ffi.Native<ffi.Pointer<ffi.NativeType> Function(ffi.Int)>(symbol: 'gtk_window_new')
   external static ffi.Pointer<ffi.NativeType> _gtkWindowNew(int type);
 
@@ -918,6 +957,21 @@ class _GtkWindow extends _GtkContainer {
 
   @ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.NativeType>)>(symbol: 'gtk_window_is_active')
   external static bool _gtkWindowIsActive(ffi.Pointer<ffi.NativeType> widget);
+
+  @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.NativeType>, ffi.Bool)>(
+    symbol: 'gtk_window_set_decorated',
+  )
+  external static void _gtkWindowSetDecorated(ffi.Pointer<ffi.NativeType> window, bool decorated);
+
+  @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.NativeType>, ffi.Bool)>(
+    symbol: 'gtk_window_set_resizable',
+  )
+  external static void _gtkWindowSetResizable(ffi.Pointer<ffi.NativeType> window, bool resizable);
+
+  @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.NativeType>, ffi.Bool)>(
+    symbol: 'gtk_window_set_deletable',
+  )
+  external static void _gtkWindowSetDeletable(ffi.Pointer<ffi.NativeType> window, bool deletable);
 }
 
 /// Wraps FlEngine.

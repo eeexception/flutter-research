@@ -640,5 +640,100 @@ TEST_F(WindowManagerTest, TooltipWindowUpdatesPositionOnViewSizeChange) {
   EXPECT_NE(initial_rect.top, new_rect.top);
 }
 
+TEST_F(WindowManagerTest, RegularWindowDefaultDecorations) {
+  IsolateScope isolate_scope(isolate());
+
+  const int64_t view_id =
+      InternalFlutterWindows_WindowManager_CreateRegularWindow(
+          engine_id(), regular_creation_request());
+  const HWND window_handle =
+      InternalFlutterWindows_WindowManager_GetTopLevelWindowHandle(engine_id(),
+                                                                   view_id);
+
+  const DWORD style = GetWindowLong(window_handle, GWL_STYLE);
+  EXPECT_TRUE(style & WS_CAPTION);
+  EXPECT_TRUE(style & WS_SYSMENU);
+  EXPECT_TRUE(style & WS_MINIMIZEBOX);
+  EXPECT_TRUE(style & WS_MAXIMIZEBOX);
+  EXPECT_TRUE(style & WS_THICKFRAME);
+}
+
+TEST_F(WindowManagerTest, RegularWindowNoDecorations) {
+  IsolateScope isolate_scope(isolate());
+
+  RegularWindowCreationRequest request{
+      .preferred_size =
+          {
+              .has_preferred_view_size = true,
+              .preferred_view_width = 800,
+              .preferred_view_height = 600,
+          },
+      .decorations =
+          {
+              .has_title_bar = false,
+              .has_border = false,
+              .has_close_button = false,
+              .has_minimize_button = false,
+              .has_maximize_button = false,
+              .is_resizable = false,
+              .has_shadow = false,
+          },
+  };
+
+  const int64_t view_id =
+      InternalFlutterWindows_WindowManager_CreateRegularWindow(engine_id(),
+                                                               &request);
+  const HWND window_handle =
+      InternalFlutterWindows_WindowManager_GetTopLevelWindowHandle(engine_id(),
+                                                                   view_id);
+
+  const DWORD style = GetWindowLong(window_handle, GWL_STYLE);
+  // WS_CAPTION = WS_BORDER | WS_DLGFRAME. Neither component should be present.
+  EXPECT_FALSE(style & WS_BORDER);
+  EXPECT_FALSE(style & WS_DLGFRAME);
+  EXPECT_FALSE(style & WS_SYSMENU);
+  EXPECT_FALSE(style & WS_MINIMIZEBOX);
+  EXPECT_FALSE(style & WS_MAXIMIZEBOX);
+  EXPECT_FALSE(style & WS_THICKFRAME);
+  EXPECT_TRUE(style & WS_POPUP);
+}
+
+TEST_F(WindowManagerTest, RegularWindowCustomDecorations) {
+  IsolateScope isolate_scope(isolate());
+
+  RegularWindowCreationRequest request{
+      .preferred_size =
+          {
+              .has_preferred_view_size = true,
+              .preferred_view_width = 800,
+              .preferred_view_height = 600,
+          },
+      .decorations =
+          {
+              .has_title_bar = true,
+              .has_border = true,
+              .has_close_button = true,
+              .has_minimize_button = false,
+              .has_maximize_button = false,
+              .is_resizable = false,
+              .has_shadow = true,
+          },
+  };
+
+  const int64_t view_id =
+      InternalFlutterWindows_WindowManager_CreateRegularWindow(engine_id(),
+                                                               &request);
+  const HWND window_handle =
+      InternalFlutterWindows_WindowManager_GetTopLevelWindowHandle(engine_id(),
+                                                                   view_id);
+
+  const DWORD style = GetWindowLong(window_handle, GWL_STYLE);
+  EXPECT_TRUE(style & WS_CAPTION);
+  EXPECT_TRUE(style & WS_SYSMENU);
+  EXPECT_FALSE(style & WS_MINIMIZEBOX);
+  EXPECT_FALSE(style & WS_MAXIMIZEBOX);
+  EXPECT_FALSE(style & WS_THICKFRAME);
+}
+
 }  // namespace testing
 }  // namespace flutter

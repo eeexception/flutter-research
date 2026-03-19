@@ -52,11 +52,26 @@ struct WindowSize {
   int32_t height;
 };
 
+// Describes which system-drawn decorations a window should have.
+//
+// Keep this struct in sync with `_WindowDecorationsRequest` declared in
+// packages/flutter/lib/src/widgets/_window_win32.dart.
+struct WindowDecorationsRequest {
+  bool has_title_bar = true;
+  bool has_border = true;
+  bool has_close_button = true;
+  bool has_minimize_button = true;
+  bool has_maximize_button = true;
+  bool is_resizable = true;
+  bool has_shadow = true;
+};
+
 // Sent by the framework to request a new window be created.
 struct RegularWindowCreationRequest {
   WindowSizeRequest preferred_size;
   WindowConstraints preferred_constraints;
   LPCWSTR title;
+  WindowDecorationsRequest decorations;
 };
 
 struct DialogWindowCreationRequest {

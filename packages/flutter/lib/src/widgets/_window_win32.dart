@@ -143,6 +143,7 @@ class WindowingOwnerWin32 extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations = WindowDecorations.all,
     required RegularWindowControllerDelegate delegate,
   }) {
     return RegularWindowControllerWin32(
@@ -151,6 +152,7 @@ class WindowingOwnerWin32 extends WindowingOwner {
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
       title: title,
+      decorations: decorations,
     );
   }
 
@@ -315,6 +317,7 @@ class RegularWindowControllerWin32 extends RegularWindowController {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations = WindowDecorations.all,
   }) : _owner = owner,
        _delegate = delegate,
        super.empty() {
@@ -330,6 +333,7 @@ class RegularWindowControllerWin32 extends RegularWindowController {
       preferredSize,
       preferredConstraints,
       title,
+      decorations,
     );
     if (viewId < 0) {
       throw Exception('Windows failed to create a regular window with a valid view id.');
@@ -984,6 +988,7 @@ class _Win32PlatformInterface {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations,
   ) {
     final ffi.Pointer<_RegularWindowCreationRequest> request =
         allocator<_RegularWindowCreationRequest>();
@@ -991,6 +996,7 @@ class _Win32PlatformInterface {
       request.ref.preferredSize.from(preferredSize);
       request.ref.preferredConstraints.from(preferredConstraints);
       request.ref.title = (title ?? 'Regular window').toNativeUtf16(allocator: allocator);
+      request.ref.decorations.from(decorations);
       return _createRegularWindow(engineId, request);
     } finally {
       allocator.free(request);
@@ -1211,11 +1217,50 @@ class _Win32PlatformInterface {
   external static void updateTooltipWindowPosition(HWND windowHandle);
 }
 
+/// FFI payload for [WindowDecorations] used by
+/// [_Win32PlatformInterface.createRegularWindow].
+///
+/// Keep this struct in sync with `WindowDecorationsRequest` declared in
+/// engine/src/flutter/shell/platform/windows/window_manager.h.
+final class _WindowDecorationsRequest extends ffi.Struct {
+  @ffi.Bool()
+  external bool hasTitleBar;
+
+  @ffi.Bool()
+  external bool hasBorder;
+
+  @ffi.Bool()
+  external bool hasCloseButton;
+
+  @ffi.Bool()
+  external bool hasMinimizeButton;
+
+  @ffi.Bool()
+  external bool hasMaximizeButton;
+
+  @ffi.Bool()
+  external bool isResizable;
+
+  @ffi.Bool()
+  external bool hasShadow;
+
+  void from(WindowDecorations decorations) {
+    hasTitleBar = decorations.hasTitleBar;
+    hasBorder = decorations.hasBorder;
+    hasCloseButton = decorations.hasCloseButton;
+    hasMinimizeButton = decorations.hasMinimizeButton;
+    hasMaximizeButton = decorations.hasMaximizeButton;
+    isResizable = decorations.isResizable;
+    hasShadow = decorations.hasShadow;
+  }
+}
+
 /// Payload for the creation method used by [_Win32PlatformInterface.createRegularWindow].
 final class _RegularWindowCreationRequest extends ffi.Struct {
   external _WindowSizeRequest preferredSize;
   external _WindowConstraintsRequest preferredConstraints;
   external ffi.Pointer<_Utf16> title;
+  external _WindowDecorationsRequest decorations;
 }
 
 /// Payload for the creation method used by [_Win32PlatformInterface.createDialogWindow].

@@ -374,6 +374,9 @@ static void FlipRect(NSRect& rect, const NSRect& globalScreenFrame) {
   window.contentViewController = controller;
   window.styleMask = NSWindowStyleMaskResizable | NSWindowStyleMaskTitled |
                      NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
+
+  [self applyDecorations:request->decorations toWindow:window];
+
   if (request->has_size) {
     [window flutterSetContentSize:request->size];
   }
@@ -390,6 +393,58 @@ static void FlipRect(NSRect& rect, const NSRect& globalScreenFrame) {
   [_windows addObject:owner];
 
   return controller.viewIdentifier;
+}
+
+// Applies the requested decoration overrides to |window|. Does nothing when all
+// decoration fields use their default (true) values, preserving existing
+// behavior for callers that do not pass custom decorations.
+- (void)applyDecorations:(const FlutterWindowDecorations&)decorations
+                toWindow:(NSWindow*)window {
+  if (!decorations.has_title_bar) {
+    window.styleMask &= ~NSWindowStyleMaskTitled;
+  }
+  if (!decorations.has_close_button) {
+    window.styleMask &= ~NSWindowStyleMaskClosable;
+  }
+  if (!decorations.has_minimize_button) {
+    window.styleMask &= ~NSWindowStyleMaskMiniaturizable;
+  }
+  if (!decorations.is_resizable && !decorations.has_maximize_button) {
+    // On macOS, the maximize (zoom) button is tied to the resizable style
+    // mask; only remove it when both resizability and the maximize button
+    // are disabled.
+    window.styleMask &= ~NSWindowStyleMaskResizable;
+  }
+  if (!decorations.has_maximize_button) {
+    // Hide the zoom button independently of resizability when the maximize
+    // button was explicitly disabled.
+    [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
+  }
+  if (!decorations.has_shadow) {
+    window.hasShadow = NO;
+  }
+  if (!decorations.has_border && !decorations.has_title_bar) {
+    // A fully borderless window.
+    window.styleMask = NSWindowStyleMaskBorderless;
+  } else if (decorations.has_border && !decorations.has_title_bar) {
+    // On macOS the border is implied by the title bar. If the app wants a
+    // border but no title bar, give it a titled window with a transparent title
+    // bar and full-size content so the app's content extends to the edges while
+    // keeping the frame.
+    window.styleMask |= NSWindowStyleMaskTitled | NSWindowStyleMaskFullSizeContentView;
+    window.titlebarAppearsTransparent = YES;
+    window.titleVisibility = NSWindowTitleHidden;
+    // Hide the standard window buttons unless they were explicitly requested.
+    if (!decorations.has_close_button) {
+      [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
+    }
+    if (!decorations.has_minimize_button) {
+      [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
+    }
+    if (!decorations.has_maximize_button) {
+      [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
+    }
+  }
 }
 
 - (void)destroyWindow:(NSWindow*)window {
