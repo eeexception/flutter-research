@@ -12,18 +12,21 @@ import 'package:flutter/src/widgets/_window.dart'
         DialogWindowControllerDelegate,
         PopupWindow,
         PopupWindowController,
+        PopupWindowControllerDelegate,
         RegularWindow,
         RegularWindowController,
         RegularWindowControllerDelegate,
         SatelliteWindow,
         SatelliteWindowController,
+        SatelliteWindowControllerDelegate,
         TooltipWindow,
         TooltipWindowController,
+        TooltipWindowControllerDelegate,
         WindowDecorations,
         WindowScope,
         WindowingOwner,
         createDefaultWindowingOwner;
-import 'package:flutter/src/widgets/_window_positioner.dart';
+import 'package:flutter/src/widgets/_window_positioner.dart' show WindowPositioner;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -203,6 +206,95 @@ class _StubSatelliteWindowController extends SatelliteWindowController {
   void destroy() {}
 }
 
+/// A [WindowingOwner] that records arguments passed to its factory methods so
+/// tests can verify that [RegularWindowController]'s factory and
+/// [WindowingOwner.createDecoratedRegularWindowController] route correctly.
+///
+/// Only [createRegularWindowController] is implemented; all other factories
+/// throw because the decoration API only concerns regular windows.
+class _RecordingWindowingOwner extends WindowingOwner {
+  _RecordingWindowingOwner(this._tester);
+
+  final WidgetTester _tester;
+
+  int createRegularCalls = 0;
+  int createDecoratedCalls = 0;
+  WindowDecorations? lastDecorations;
+  Size? lastPreferredSize;
+  String? lastTitle;
+
+  @override
+  RegularWindowController createRegularWindowController({
+    required RegularWindowControllerDelegate delegate,
+    Size? preferredSize,
+    BoxConstraints? preferredConstraints,
+    String? title,
+  }) {
+    createRegularCalls++;
+    lastPreferredSize = preferredSize;
+    lastTitle = title;
+    return _StubRegularWindowController(_tester);
+  }
+
+  @override
+  RegularWindowController createDecoratedRegularWindowController({
+    required RegularWindowControllerDelegate delegate,
+    Size? preferredSize,
+    BoxConstraints? preferredConstraints,
+    String? title,
+    required WindowDecorations decorations,
+  }) {
+    createDecoratedCalls++;
+    lastDecorations = decorations;
+    return super.createDecoratedRegularWindowController(
+      delegate: delegate,
+      preferredSize: preferredSize,
+      preferredConstraints: preferredConstraints,
+      title: title,
+      decorations: decorations,
+    );
+  }
+
+  @override
+  DialogWindowController createDialogWindowController({
+    required DialogWindowControllerDelegate delegate,
+    Size? preferredSize,
+    BoxConstraints? preferredConstraints,
+    BaseWindowController? parent,
+    String? title,
+  }) => throw UnimplementedError();
+
+  @override
+  TooltipWindowController createTooltipWindowController({
+    required TooltipWindowControllerDelegate delegate,
+    required BoxConstraints preferredConstraints,
+    required bool isSizedToContent,
+    required Rect anchorRect,
+    required WindowPositioner positioner,
+    required BaseWindowController parent,
+  }) => throw UnimplementedError();
+
+  @override
+  PopupWindowController createPopupWindowController({
+    required PopupWindowControllerDelegate delegate,
+    required BoxConstraints preferredConstraints,
+    required Rect anchorRect,
+    required WindowPositioner positioner,
+    required BaseWindowController parent,
+  }) => throw UnimplementedError();
+
+  @override
+  SatelliteWindowController createSatelliteWindowController({
+    required SatelliteWindowControllerDelegate delegate,
+    required BaseWindowController parent,
+    required WindowPositioner initialPositioner,
+    Rect? initialAnchorRect,
+    Size? preferredSize,
+    BoxConstraints? preferredConstraints,
+    String? title,
+  }) => throw UnimplementedError();
+}
+
 void main() {
   group('Windowing', () {
     group('isWindowingEnabled is false', () {
@@ -362,6 +454,79 @@ void main() {
         expect(WindowDecorations.all.copyWith(), equals(WindowDecorations.all));
         expect(WindowDecorations.none.copyWith(), equals(WindowDecorations.none));
       });
+
+      testWidgets(
+        'RegularWindowController base class exposes default decorations and a no-op setter',
+        (WidgetTester tester) async {
+          final controller = _StubRegularWindowController(tester);
+          addTearDown(controller.dispose);
+
+          // The stub does not override decorations/setDecorations so the
+          // base-class concrete implementations are used.
+          expect(controller.decorations, equals(WindowDecorations.all));
+
+          controller.setDecorations(WindowDecorations.none);
+          // The base-class setter is a no-op: the value is unchanged.
+          expect(controller.decorations, equals(WindowDecorations.all));
+        },
+      );
+
+      testWidgets(
+        'WindowingOwner.createDecoratedRegularWindowController delegates to '
+        'createRegularWindowController by default',
+        (WidgetTester tester) async {
+          final owner = _RecordingWindowingOwner(tester);
+
+          final RegularWindowController controller =
+              owner.createDecoratedRegularWindowController(
+            delegate: RegularWindowControllerDelegate(),
+            preferredSize: const Size(640, 480),
+            title: 'hello',
+            decorations: WindowDecorations.none,
+          );
+          addTearDown(controller.dispose);
+
+          expect(owner.createDecoratedCalls, 1);
+          // The default implementation calls through to the undecorated
+          // factory, forwarding every argument except decorations.
+          expect(owner.createRegularCalls, 1);
+          expect(owner.lastDecorations, equals(WindowDecorations.none));
+          expect(owner.lastPreferredSize, equals(const Size(640, 480)));
+          expect(owner.lastTitle, equals('hello'));
+        },
+      );
+
+      testWidgets(
+        'RegularWindowController factory routes through '
+        'WindowingOwner.createDecoratedRegularWindowController',
+        (WidgetTester tester) async {
+          final owner = _RecordingWindowingOwner(tester);
+          final WindowingOwner previous = WidgetsBinding.instance.windowingOwner;
+          WidgetsBinding.instance.windowingOwner = owner;
+          addTearDown(() => WidgetsBinding.instance.windowingOwner = previous);
+
+          final undecorated = RegularWindowController(title: 'default');
+          addTearDown(undecorated.dispose);
+          // When no decorations argument is given the factory still goes
+          // through createDecoratedRegularWindowController with
+          // WindowDecorations.all.
+          expect(owner.createDecoratedCalls, 1);
+          expect(owner.createRegularCalls, 1);
+          expect(owner.lastDecorations, equals(WindowDecorations.all));
+          expect(owner.lastTitle, equals('default'));
+
+          final decorated = RegularWindowController(
+            decorations: const WindowDecorations(hasTitleBar: false),
+          );
+          addTearDown(decorated.dispose);
+          expect(owner.createDecoratedCalls, 2);
+          expect(owner.createRegularCalls, 2);
+          expect(
+            owner.lastDecorations,
+            equals(const WindowDecorations(hasTitleBar: false)),
+          );
+        },
+      );
 
       testWidgets('RegularWindow does not throw', (WidgetTester tester) async {
         final controller = _StubRegularWindowController(tester);

@@ -12,14 +12,6 @@
 
 #include "flutter/shell/platform/common/isolate_scope.h"
 
-// Returns true if |decorations| matches the fully-decorated default.
-static bool IsDefaultDecorations(const FlutterWindowDecorations& decorations) {
-  return decorations.has_title_bar && decorations.has_border &&
-         decorations.has_close_button && decorations.has_minimize_button &&
-         decorations.has_maximize_button && decorations.is_resizable &&
-         decorations.has_shadow;
-}
-
 // A delegate for a Flutter managed window.
 @interface FlutterWindowOwner : NSObject <NSWindowDelegate, FlutterViewSizingDelegate> {
   // Strong reference to the window. This is the only strong reference to the
@@ -383,13 +375,7 @@ static void FlipRect(NSRect& rect, const NSRect& globalScreenFrame) {
   window.contentViewController = controller;
   window.styleMask = NSWindowStyleMaskResizable | NSWindowStyleMaskTitled |
                      NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
-
-  // Only apply decoration overrides when they differ from the fully-decorated
-  // default, so that callers that do not specify decorations take the exact
-  // same code path as before this feature was added.
-  if (!IsDefaultDecorations(request->decorations)) {
-    [self applyDecorations:request->decorations toWindow:window];
-  }
+  [self applyDecorations:request->decorations toWindow:window];
 
   if (request->has_size) {
     [window flutterSetContentSize:request->size];

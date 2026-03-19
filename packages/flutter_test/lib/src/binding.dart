@@ -313,10 +313,12 @@ class _TestRegularWindowController extends RegularWindowController with _ChildWi
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    WindowDecorations decorations = WindowDecorations.all,
   }) : _delegate = delegate,
        _size = preferredSize ?? const Size(800, 600),
        _constraints = preferredConstraints ?? BoxConstraints.loose(const Size(1920, 1080)),
        _title = title ?? 'Test Window',
+       _decorations = decorations,
        super.empty() {
     _constrainToBounds();
     rootView = _TestFlutterView(
@@ -334,6 +336,7 @@ class _TestRegularWindowController extends RegularWindowController with _ChildWi
   Size _size;
   BoxConstraints _constraints;
   String _title;
+  WindowDecorations _decorations;
   bool _isMaximized = false;
   bool _isMinimized = false;
   bool _isFullscreen = false;
@@ -373,6 +376,15 @@ class _TestRegularWindowController extends RegularWindowController with _ChildWi
   @override
   void setTitle(String title) {
     _title = title;
+    notifyListeners();
+  }
+
+  @override
+  WindowDecorations get decorations => _decorations;
+
+  @override
+  void setDecorations(WindowDecorations decorations) {
+    _decorations = decorations;
     notifyListeners();
   }
 
@@ -934,6 +946,26 @@ class _TestWindowingOwner extends WindowingOwner {
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
       title: title,
+    );
+  }
+
+  @internal
+  @override
+  RegularWindowController createDecoratedRegularWindowController({
+    required RegularWindowControllerDelegate delegate,
+    Size? preferredSize,
+    BoxConstraints? preferredConstraints,
+    String? title,
+    required WindowDecorations decorations,
+  }) {
+    return _TestRegularWindowController(
+      delegate: delegate,
+      platformDispatcher: _platformDispatcher,
+      windowingOwner: this,
+      preferredSize: preferredSize,
+      preferredConstraints: preferredConstraints,
+      title: title,
+      decorations: decorations,
     );
   }
 
