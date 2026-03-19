@@ -61,6 +61,7 @@ class RegularWindowContent extends StatelessWidget {
                         key: key,
                         controller: RegularWindowController(
                           preferredSize: windowSettings.regularSize,
+                          decorations: windowSettings.regularDecorations,
                           delegate: CallbackRegularWindowControllerDelegate(
                             onDestroyed: () => windowManager.remove(key),
                           ),

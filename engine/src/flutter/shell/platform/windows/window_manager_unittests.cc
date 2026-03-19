@@ -792,5 +792,201 @@ TEST_F(WindowManagerTest, SetWindowDecorationsChangesStyleAtRuntime) {
   EXPECT_TRUE(restored_style & WS_MAXIMIZEBOX);
 }
 
+// Helper used by the per-flag decoration tests below.
+// Creates a regular window, applies |decorations| via SetWindowDecorations,
+// and returns the portion of the window style governed by decorations.
+static DWORD CreateWindowAndGetDecorationStyle(
+    int64_t engine_id,
+    const WindowDecorationsRequest& decorations) {
+  RegularWindowCreationRequest request{
+      .preferred_size =
+          {
+              .has_preferred_view_size = true,
+              .preferred_view_width = 400,
+              .preferred_view_height = 300,
+          },
+  };
+  const int64_t view_id =
+      InternalFlutterWindows_WindowManager_CreateRegularWindow(engine_id,
+                                                               &request);
+  const HWND window_handle =
+      InternalFlutterWindows_WindowManager_GetTopLevelWindowHandle(engine_id,
+                                                                   view_id);
+  InternalFlutterWindows_WindowManager_SetWindowDecorations(window_handle,
+                                                            &decorations);
+  return GetWindowLong(window_handle, GWL_STYLE);
+}
+
+TEST_F(WindowManagerTest, SetWindowDecorationsPerFlag) {
+  IsolateScope isolate_scope(isolate());
+
+  // Mask containing every style bit that decorations can affect. Checked
+  // against so that non-decoration bits (like WS_VISIBLE and WS_CLIPCHILDREN)
+  // are excluded from the comparison.
+  constexpr DWORD kDecorationBits = WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
+                                    WS_MAXIMIZEBOX | WS_THICKFRAME | WS_BORDER |
+                                    WS_POPUP;
+
+  auto get_style = [this](const WindowDecorationsRequest& request) {
+    return CreateWindowAndGetDecorationStyle(engine_id(), request) &
+           kDecorationBits;
+  };
+
+  // has_title_bar controls WS_CAPTION.
+  {
+    const WindowDecorationsRequest request{
+        .has_border = false,
+        .has_close_button = false,
+        .has_minimize_button = false,
+        .has_maximize_button = false,
+        .is_resizable = false,
+    };
+    const DWORD style = get_style(request);
+    // WS_CAPTION == WS_BORDER | WS_DLGFRAME — both bits should be set.
+    EXPECT_TRUE(style & WS_DLGFRAME);
+    EXPECT_TRUE(style & WS_BORDER);
+    EXPECT_FALSE(style & WS_SYSMENU);
+    EXPECT_FALSE(style & WS_MINIMIZEBOX);
+    EXPECT_FALSE(style & WS_MAXIMIZEBOX);
+    EXPECT_FALSE(style & WS_THICKFRAME);
+    EXPECT_FALSE(style & WS_POPUP);
+  }
+
+  // has_close_button adds WS_SYSMENU.
+  {
+    const WindowDecorationsRequest request{
+        .has_border = false,
+        .has_minimize_button = false,
+        .has_maximize_button = false,
+        .is_resizable = false,
+    };
+    const DWORD style = get_style(request);
+    EXPECT_TRUE(style & WS_SYSMENU);
+    EXPECT_FALSE(style & WS_MINIMIZEBOX);
+    EXPECT_FALSE(style & WS_MAXIMIZEBOX);
+  }
+
+  // has_minimize_button adds WS_MINIMIZEBOX (and WS_SYSMENU since it is a
+  // prerequisite).
+  {
+    const WindowDecorationsRequest request{
+        .has_border = false,
+        .has_close_button = false,
+        .has_maximize_button = false,
+        .is_resizable = false,
+    };
+    const DWORD style = get_style(request);
+    EXPECT_TRUE(style & WS_MINIMIZEBOX);
+    EXPECT_TRUE(style & WS_SYSMENU);
+    EXPECT_FALSE(style & WS_MAXIMIZEBOX);
+  }
+
+  // has_maximize_button adds WS_MAXIMIZEBOX (and WS_SYSMENU).
+  {
+    const WindowDecorationsRequest request{
+        .has_border = false,
+        .has_close_button = false,
+        .has_minimize_button = false,
+        .is_resizable = false,
+    };
+    const DWORD style = get_style(request);
+    EXPECT_TRUE(style & WS_MAXIMIZEBOX);
+    EXPECT_TRUE(style & WS_SYSMENU);
+    EXPECT_FALSE(style & WS_MINIMIZEBOX);
+  }
+
+  // is_resizable adds WS_THICKFRAME.
+  {
+    const WindowDecorationsRequest request{
+        .has_title_bar = false,
+        .has_border = false,
+        .has_close_button = false,
+        .has_minimize_button = false,
+        .has_maximize_button = false,
+    };
+    const DWORD style = get_style(request);
+    EXPECT_TRUE(style & WS_THICKFRAME);
+    EXPECT_FALSE(style & WS_DLGFRAME);
+    EXPECT_FALSE(style & WS_SYSMENU);
+    EXPECT_FALSE(style & WS_POPUP);
+  }
+
+  // has_border without is_resizable adds WS_BORDER.
+  {
+    const WindowDecorationsRequest request{
+        .has_title_bar = false,
+        .has_close_button = false,
+        .has_minimize_button = false,
+        .has_maximize_button = false,
+        .is_resizable = false,
+    };
+    const DWORD style = get_style(request);
+    EXPECT_TRUE(style & WS_BORDER);
+    EXPECT_FALSE(style & WS_DLGFRAME);
+    EXPECT_FALSE(style & WS_THICKFRAME);
+    EXPECT_FALSE(style & WS_POPUP);
+  }
+
+  // has_border is subsumed by is_resizable's thick frame.
+  {
+    const WindowDecorationsRequest request{
+        .has_title_bar = false,
+        .has_close_button = false,
+        .has_minimize_button = false,
+        .has_maximize_button = false,
+    };
+    const DWORD style = get_style(request);
+    EXPECT_TRUE(style & WS_THICKFRAME);
+  }
+
+  // Without a title bar the button flags have no effect.
+  {
+    const WindowDecorationsRequest request{
+        .has_title_bar = false,
+        .has_border = false,
+        .is_resizable = false,
+    };
+    const DWORD style = get_style(request);
+    EXPECT_FALSE(style & WS_DLGFRAME);
+    EXPECT_FALSE(style & WS_SYSMENU);
+    EXPECT_FALSE(style & WS_MINIMIZEBOX);
+    EXPECT_FALSE(style & WS_MAXIMIZEBOX);
+    // Falls back to WS_POPUP since no decoration bits remain.
+    EXPECT_TRUE(style & WS_POPUP);
+  }
+}
+
+TEST_F(WindowManagerTest, SetWindowDecorationsPreservesVisibility) {
+  IsolateScope isolate_scope(isolate());
+
+  const int64_t view_id =
+      InternalFlutterWindows_WindowManager_CreateRegularWindow(
+          engine_id(), regular_creation_request());
+  const HWND window_handle =
+      InternalFlutterWindows_WindowManager_GetTopLevelWindowHandle(engine_id(),
+                                                                   view_id);
+
+  ShowWindow(window_handle, SW_SHOWNORMAL);
+  ASSERT_TRUE(GetWindowLong(window_handle, GWL_STYLE) & WS_VISIBLE);
+
+  // Removing every decoration should not clear non-decoration style bits such
+  // as WS_VISIBLE.
+  const WindowDecorationsRequest stripped{
+      .has_title_bar = false,
+      .has_border = false,
+      .has_close_button = false,
+      .has_minimize_button = false,
+      .has_maximize_button = false,
+      .is_resizable = false,
+      .has_shadow = false,
+  };
+  InternalFlutterWindows_WindowManager_SetWindowDecorations(window_handle,
+                                                            &stripped);
+
+  const DWORD style = GetWindowLong(window_handle, GWL_STYLE);
+  EXPECT_TRUE(style & WS_VISIBLE);
+  EXPECT_FALSE(style & WS_CAPTION);
+}
+
 }  // namespace testing
 }  // namespace flutter

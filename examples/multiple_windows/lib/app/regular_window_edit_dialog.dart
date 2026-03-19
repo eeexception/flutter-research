@@ -40,6 +40,7 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
   late bool initialFullscreen;
   late bool initialMaximized;
   late bool initialMinimized;
+  late WindowDecorations initialDecorations;
 
   late final TextEditingController widthController;
   late final TextEditingController heightController;
@@ -48,6 +49,7 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
   bool? nextIsFullscreen;
   bool? nextIsMaximized;
   bool? nextIsMinimized;
+  WindowDecorations? nextDecorations;
 
   void _init() {
     widget.controller.addListener(_onNotification);
@@ -56,6 +58,7 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
     initialFullscreen = widget.controller.isFullscreen;
     initialMaximized = widget.controller.isMaximized;
     initialMinimized = widget.controller.isMinimized;
+    initialDecorations = widget.controller.decorations;
 
     widthController = TextEditingController(text: initialSize.width.toString());
     heightController = TextEditingController(
@@ -65,6 +68,7 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
     nextIsFullscreen = null;
     nextIsMaximized = null;
     nextIsMinimized = null;
+    nextDecorations = null;
   }
 
   @override
@@ -109,6 +113,12 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
         nextIsMinimized = null;
       });
     }
+    if (widget.controller.decorations != initialDecorations) {
+      setState(() {
+        initialDecorations = widget.controller.decorations;
+        nextDecorations = null;
+      });
+    }
   }
 
   @override
@@ -141,8 +151,29 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
     if (nextIsMinimized != null && nextIsMinimized != initialMinimized) {
       widget.controller.setMinimized(nextIsMinimized!);
     }
+    if (nextDecorations != null && nextDecorations != initialDecorations) {
+      widget.controller.setDecorations(nextDecorations!);
+    }
 
     widget.onClose();
+  }
+
+  Widget _decorationCheckbox({
+    required String title,
+    required bool Function(WindowDecorations) getter,
+    required WindowDecorations Function(WindowDecorations, bool) setter,
+  }) {
+    final WindowDecorations current = nextDecorations ?? initialDecorations;
+    return CheckboxListTile(
+      dense: true,
+      title: Text(title),
+      value: getter(current),
+      onChanged: (bool? value) {
+        if (value != null) {
+          setState(() => nextDecorations = setter(current, value));
+        }
+      },
+    );
   }
 
   @override
@@ -192,6 +223,52 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
                 setState(() => nextIsMinimized = value);
               }
             },
+          ),
+          const Divider(),
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                'Decorations',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          _decorationCheckbox(
+            title: 'Title bar',
+            getter: (d) => d.hasTitleBar,
+            setter: (d, v) => d.copyWith(hasTitleBar: v),
+          ),
+          _decorationCheckbox(
+            title: 'Border',
+            getter: (d) => d.hasBorder,
+            setter: (d, v) => d.copyWith(hasBorder: v),
+          ),
+          _decorationCheckbox(
+            title: 'Close button',
+            getter: (d) => d.hasCloseButton,
+            setter: (d, v) => d.copyWith(hasCloseButton: v),
+          ),
+          _decorationCheckbox(
+            title: 'Minimize button',
+            getter: (d) => d.hasMinimizeButton,
+            setter: (d, v) => d.copyWith(hasMinimizeButton: v),
+          ),
+          _decorationCheckbox(
+            title: 'Maximize button',
+            getter: (d) => d.hasMaximizeButton,
+            setter: (d, v) => d.copyWith(hasMaximizeButton: v),
+          ),
+          _decorationCheckbox(
+            title: 'Resizable',
+            getter: (d) => d.isResizable,
+            setter: (d, v) => d.copyWith(isResizable: v),
+          ),
+          _decorationCheckbox(
+            title: 'Shadow',
+            getter: (d) => d.hasShadow,
+            setter: (d, v) => d.copyWith(hasShadow: v),
           ),
         ],
       ),

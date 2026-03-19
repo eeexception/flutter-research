@@ -315,6 +315,23 @@ void main() {
         );
       });
 
+      test(
+        'default WindowingOwner throws when accessing createDecoratedRegularWindowController',
+        () {
+          final WindowingOwner owner = createDefaultWindowingOwner();
+          // The default implementation of createDecoratedRegularWindowController
+          // delegates to createRegularWindowController, which throws on the
+          // unsupported owner.
+          expect(
+            () => owner.createDecoratedRegularWindowController(
+              delegate: RegularWindowControllerDelegate(),
+              decorations: WindowDecorations.all,
+            ),
+            throwsUnsupportedError,
+          );
+        },
+      );
+
       test('default WindowingOwner throws when accessing createDialogWindowController', () {
         final WindowingOwner owner = createDefaultWindowingOwner();
         expect(
@@ -435,6 +452,19 @@ void main() {
       });
 
       test('WindowDecorations.copyWith replaces only specified fields', () {
+        // copyWith with no arguments yields an identical value.
+        expect(WindowDecorations.all.copyWith(), equals(WindowDecorations.all));
+        expect(WindowDecorations.none.copyWith(), equals(WindowDecorations.none));
+        // Combining several overrides works.
+        expect(
+          WindowDecorations.all.copyWith(isResizable: false, hasShadow: false),
+          equals(const WindowDecorations(isResizable: false, hasShadow: false)),
+        );
+        // Each field can be toggled independently in either direction.
+        expect(
+          WindowDecorations.all.copyWith(hasTitleBar: false),
+          equals(const WindowDecorations(hasTitleBar: false)),
+        );
         expect(
           WindowDecorations.none.copyWith(hasTitleBar: true),
           equals(const WindowDecorations(
@@ -447,12 +477,156 @@ void main() {
           )),
         );
         expect(
-          WindowDecorations.all.copyWith(isResizable: false, hasShadow: false),
-          equals(const WindowDecorations(isResizable: false, hasShadow: false)),
+          WindowDecorations.all.copyWith(hasBorder: false),
+          equals(const WindowDecorations(hasBorder: false)),
         );
-        // copyWith with no arguments yields an identical value.
-        expect(WindowDecorations.all.copyWith(), equals(WindowDecorations.all));
-        expect(WindowDecorations.none.copyWith(), equals(WindowDecorations.none));
+        expect(
+          WindowDecorations.none.copyWith(hasBorder: true),
+          equals(const WindowDecorations(
+            hasTitleBar: false,
+            hasCloseButton: false,
+            hasMinimizeButton: false,
+            hasMaximizeButton: false,
+            isResizable: false,
+            hasShadow: false,
+          )),
+        );
+        expect(
+          WindowDecorations.all.copyWith(hasCloseButton: false),
+          equals(const WindowDecorations(hasCloseButton: false)),
+        );
+        expect(
+          WindowDecorations.none.copyWith(hasCloseButton: true),
+          equals(const WindowDecorations(
+            hasTitleBar: false,
+            hasBorder: false,
+            hasMinimizeButton: false,
+            hasMaximizeButton: false,
+            isResizable: false,
+            hasShadow: false,
+          )),
+        );
+        expect(
+          WindowDecorations.all.copyWith(hasMinimizeButton: false),
+          equals(const WindowDecorations(hasMinimizeButton: false)),
+        );
+        expect(
+          WindowDecorations.none.copyWith(hasMinimizeButton: true),
+          equals(const WindowDecorations(
+            hasTitleBar: false,
+            hasBorder: false,
+            hasCloseButton: false,
+            hasMaximizeButton: false,
+            isResizable: false,
+            hasShadow: false,
+          )),
+        );
+        expect(
+          WindowDecorations.all.copyWith(hasMaximizeButton: false),
+          equals(const WindowDecorations(hasMaximizeButton: false)),
+        );
+        expect(
+          WindowDecorations.none.copyWith(hasMaximizeButton: true),
+          equals(const WindowDecorations(
+            hasTitleBar: false,
+            hasBorder: false,
+            hasCloseButton: false,
+            hasMinimizeButton: false,
+            isResizable: false,
+            hasShadow: false,
+          )),
+        );
+        expect(
+          WindowDecorations.all.copyWith(isResizable: false),
+          equals(const WindowDecorations(isResizable: false)),
+        );
+        expect(
+          WindowDecorations.none.copyWith(isResizable: true),
+          equals(const WindowDecorations(
+            hasTitleBar: false,
+            hasBorder: false,
+            hasCloseButton: false,
+            hasMinimizeButton: false,
+            hasMaximizeButton: false,
+            hasShadow: false,
+          )),
+        );
+        expect(
+          WindowDecorations.all.copyWith(hasShadow: false),
+          equals(const WindowDecorations(hasShadow: false)),
+        );
+        expect(
+          WindowDecorations.none.copyWith(hasShadow: true),
+          equals(const WindowDecorations(
+            hasTitleBar: false,
+            hasBorder: false,
+            hasCloseButton: false,
+            hasMinimizeButton: false,
+            hasMaximizeButton: false,
+            isResizable: false,
+          )),
+        );
+      });
+
+      test('WindowDecorations.hashCode distinguishes each field', () {
+        expect(
+          const WindowDecorations(hasTitleBar: false).hashCode,
+          isNot(equals(WindowDecorations.all.hashCode)),
+        );
+        expect(
+          const WindowDecorations(hasBorder: false).hashCode,
+          isNot(equals(WindowDecorations.all.hashCode)),
+        );
+        expect(
+          const WindowDecorations(hasCloseButton: false).hashCode,
+          isNot(equals(WindowDecorations.all.hashCode)),
+        );
+        expect(
+          const WindowDecorations(hasMinimizeButton: false).hashCode,
+          isNot(equals(WindowDecorations.all.hashCode)),
+        );
+        expect(
+          const WindowDecorations(hasMaximizeButton: false).hashCode,
+          isNot(equals(WindowDecorations.all.hashCode)),
+        );
+        expect(
+          const WindowDecorations(isResizable: false).hashCode,
+          isNot(equals(WindowDecorations.all.hashCode)),
+        );
+        expect(
+          const WindowDecorations(hasShadow: false).hashCode,
+          isNot(equals(WindowDecorations.all.hashCode)),
+        );
+        expect(WindowDecorations.none.hashCode, isNot(equals(WindowDecorations.all.hashCode)));
+      });
+
+      test('WindowDecorations.toString reflects every field', () {
+        expect(
+          WindowDecorations.all.toString(),
+          equals(
+            'WindowDecorations('
+            'hasTitleBar: true, '
+            'hasBorder: true, '
+            'hasCloseButton: true, '
+            'hasMinimizeButton: true, '
+            'hasMaximizeButton: true, '
+            'isResizable: true, '
+            'hasShadow: true)',
+          ),
+        );
+        expect(
+          WindowDecorations.none.toString(),
+          equals(
+            'WindowDecorations('
+            'hasTitleBar: false, '
+            'hasBorder: false, '
+            'hasCloseButton: false, '
+            'hasMinimizeButton: false, '
+            'hasMaximizeButton: false, '
+            'isResizable: false, '
+            'hasShadow: false)',
+          ),
+        );
       });
 
       testWidgets(

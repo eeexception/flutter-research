@@ -83,6 +83,7 @@ class TooltipSettings {}
 class WindowSettings {
   WindowSettings({
     this.regularSize = const Size(800, 600),
+    this.regularDecorations = WindowDecorations.all,
     this.dialogSize = const Size(400, 400),
     this.positioner = const WindowPositioner(
       parentAnchor: WindowPositionerAnchor.right,
@@ -92,6 +93,9 @@ class WindowSettings {
 
   /// The initial size for newly created regular windows.
   Size regularSize;
+
+  /// The decorations for newly created regular windows.
+  WindowDecorations regularDecorations;
 
   /// The initial size of the dialog window.
   Size dialogSize;

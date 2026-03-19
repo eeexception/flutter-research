@@ -486,4 +486,158 @@ TEST_F(FlutterWindowControllerTest, SetDecorationsChangesStyleAtRuntime) {
   EXPECT_TRUE(window.styleMask & NSWindowStyleMaskResizable);
   EXPECT_TRUE(window.hasShadow);
 }
+
+TEST_F(FlutterWindowControllerTest, SetDecorationsBorderWithoutTitleBar) {
+  IsolateScope isolate_scope(isolate());
+  FlutterEngine* engine = GetFlutterEngine();
+  int64_t engineId = reinterpret_cast<int64_t>(engine);
+
+  FlutterWindowCreationRequest request{
+      .has_size = true,
+      .size = {.width = 800, .height = 600},
+      .on_should_close = [] {},
+      .on_will_close = [] {},
+      .notify_listeners = [] {},
+  };
+
+  int64_t viewId = InternalFlutter_WindowController_CreateRegularWindow(engineId, &request);
+  NSWindow* window = [engine viewControllerForIdentifier:viewId].view.window;
+
+  // Request a border but no title bar. On macOS the border comes from the
+  // titled style, so applyDecorations approximates this with
+  // NSWindowStyleMaskFullSizeContentView and a transparent title bar so the
+  // content extends under where the title bar would be.
+  FlutterWindowDecorations borderOnly{
+      .has_title_bar = false,
+      .has_border = true,
+      .has_close_button = false,
+      .has_minimize_button = false,
+      .has_maximize_button = false,
+      .is_resizable = false,
+      .has_shadow = true,
+  };
+  InternalFlutter_Window_SetDecorations((__bridge void*)window, &borderOnly);
+
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskTitled);
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskFullSizeContentView);
+  EXPECT_TRUE(window.titlebarAppearsTransparent);
+  EXPECT_EQ(window.titleVisibility, NSWindowTitleHidden);
+  EXPECT_TRUE([window standardWindowButton:NSWindowCloseButton].hidden);
+  EXPECT_TRUE([window standardWindowButton:NSWindowMiniaturizeButton].hidden);
+  EXPECT_TRUE([window standardWindowButton:NSWindowZoomButton].hidden);
+
+  // Transitioning back to a fully decorated window must clear the transparent
+  // title bar and restore the title visibility.
+  FlutterWindowDecorations restored{};
+  InternalFlutter_Window_SetDecorations((__bridge void*)window, &restored);
+
+  EXPECT_FALSE(window.styleMask & NSWindowStyleMaskFullSizeContentView);
+  EXPECT_FALSE(window.titlebarAppearsTransparent);
+  EXPECT_EQ(window.titleVisibility, NSWindowTitleVisible);
+}
+
+TEST_F(FlutterWindowControllerTest, SetDecorationsPerFlag) {
+  IsolateScope isolate_scope(isolate());
+  FlutterEngine* engine = GetFlutterEngine();
+  int64_t engineId = reinterpret_cast<int64_t>(engine);
+
+  FlutterWindowCreationRequest request{
+      .has_size = true,
+      .size = {.width = 800, .height = 600},
+      .on_should_close = [] {},
+      .on_will_close = [] {},
+      .notify_listeners = [] {},
+  };
+
+  int64_t viewId = InternalFlutter_WindowController_CreateRegularWindow(engineId, &request);
+  NSWindow* window = [engine viewControllerForIdentifier:viewId].view.window;
+
+  auto setDecorations = [&](FlutterWindowDecorations d) {
+    InternalFlutter_Window_SetDecorations((__bridge void*)window, &d);
+  };
+
+  // has_title_bar → NSWindowStyleMaskTitled.
+  setDecorations({
+      .has_title_bar = true,
+      .has_border = false,
+      .has_close_button = false,
+      .has_minimize_button = false,
+      .has_maximize_button = false,
+      .is_resizable = false,
+      .has_shadow = true,
+  });
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskTitled);
+  EXPECT_FALSE(window.styleMask & NSWindowStyleMaskClosable);
+  EXPECT_FALSE(window.styleMask & NSWindowStyleMaskMiniaturizable);
+  EXPECT_FALSE(window.styleMask & NSWindowStyleMaskResizable);
+  EXPECT_FALSE(window.styleMask & NSWindowStyleMaskFullSizeContentView);
+
+  // has_close_button → NSWindowStyleMaskClosable and the close button is
+  // visible; the other standard buttons are hidden.
+  setDecorations({
+      .has_title_bar = true,
+      .has_border = false,
+      .has_close_button = true,
+      .has_minimize_button = false,
+      .has_maximize_button = false,
+      .is_resizable = false,
+      .has_shadow = true,
+  });
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskClosable);
+  EXPECT_FALSE([window standardWindowButton:NSWindowCloseButton].hidden);
+  EXPECT_TRUE([window standardWindowButton:NSWindowMiniaturizeButton].hidden);
+  EXPECT_TRUE([window standardWindowButton:NSWindowZoomButton].hidden);
+
+  // has_minimize_button → NSWindowStyleMaskMiniaturizable and the miniaturize
+  // button is visible.
+  setDecorations({
+      .has_title_bar = true,
+      .has_border = false,
+      .has_close_button = false,
+      .has_minimize_button = true,
+      .has_maximize_button = false,
+      .is_resizable = false,
+      .has_shadow = true,
+  });
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskMiniaturizable);
+  EXPECT_FALSE([window standardWindowButton:NSWindowMiniaturizeButton].hidden);
+  EXPECT_TRUE([window standardWindowButton:NSWindowCloseButton].hidden);
+  EXPECT_TRUE([window standardWindowButton:NSWindowZoomButton].hidden);
+
+  // has_maximize_button → NSWindowStyleMaskResizable (the zoom button is tied
+  // to the resizable style on macOS) and the zoom button is visible.
+  setDecorations({
+      .has_title_bar = true,
+      .has_border = false,
+      .has_close_button = false,
+      .has_minimize_button = false,
+      .has_maximize_button = true,
+      .is_resizable = false,
+      .has_shadow = true,
+  });
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskResizable);
+  EXPECT_FALSE([window standardWindowButton:NSWindowZoomButton].hidden);
+  EXPECT_TRUE([window standardWindowButton:NSWindowCloseButton].hidden);
+  EXPECT_TRUE([window standardWindowButton:NSWindowMiniaturizeButton].hidden);
+
+  // is_resizable → NSWindowStyleMaskResizable even when has_maximize_button is
+  // false; the zoom button stays hidden because has_maximize_button is false.
+  setDecorations({
+      .has_title_bar = true,
+      .has_border = false,
+      .has_close_button = false,
+      .has_minimize_button = false,
+      .has_maximize_button = false,
+      .is_resizable = true,
+      .has_shadow = true,
+  });
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskResizable);
+  EXPECT_TRUE([window standardWindowButton:NSWindowZoomButton].hidden);
+
+  // has_shadow toggles window.hasShadow independently of the style mask.
+  setDecorations({.has_shadow = false});
+  EXPECT_FALSE(window.hasShadow);
+  setDecorations({.has_shadow = true});
+  EXPECT_TRUE(window.hasShadow);
+}
 }  // namespace flutter::testing

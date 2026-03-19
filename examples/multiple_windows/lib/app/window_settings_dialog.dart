@@ -3,9 +3,10 @@
 // found in the LICENSE file.
 
 // ignore_for_file: invalid_use_of_internal_member
+// ignore_for_file: implementation_imports
 
 import 'package:flutter/material.dart';
-// ignore: implementation_imports
+import 'package:flutter/src/widgets/_window.dart' show WindowDecorations;
 import 'package:flutter/src/widgets/_window_positioner.dart';
 import 'models.dart';
 
@@ -55,6 +56,8 @@ class _WindowSettingsEditorState extends State<_WindowSettingsEditor> {
 
   late WindowPositionerAnchor _childAnchor;
 
+  late WindowDecorations _regularDecorations;
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +80,7 @@ class _WindowSettingsEditorState extends State<_WindowSettingsEditor> {
     _resizeY = widget.settings.positioner.constraintAdjustment.resizeY;
     _parentAnchor = widget.settings.positioner.parentAnchor;
     _childAnchor = widget.settings.positioner.childAnchor;
+    _regularDecorations = widget.settings.regularDecorations;
   }
 
   @override
@@ -113,23 +117,90 @@ class _WindowSettingsEditorState extends State<_WindowSettingsEditor> {
   Widget _buildRegularEditor() {
     return ListTile(
       title: const Text('Regular'),
-      subtitle: Row(
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: TextFormField(
-              controller: _regularWidthController,
-              decoration: const InputDecoration(labelText: 'Initial width'),
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _regularWidthController,
+                  decoration: const InputDecoration(labelText: 'Initial width'),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: TextFormField(
+                  controller: _regularHeightController,
+                  decoration: const InputDecoration(
+                    labelText: 'Initial height',
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: TextFormField(
-              controller: _regularHeightController,
-              decoration: const InputDecoration(labelText: 'Initial height'),
-            ),
+          const SizedBox(height: 12),
+          const Text(
+            'Decorations',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          _decorationSwitch(
+            label: 'Title bar',
+            value: _regularDecorations.hasTitleBar,
+            update: (bool v) => _regularDecorations.copyWith(hasTitleBar: v),
+          ),
+          _decorationSwitch(
+            label: 'Border',
+            value: _regularDecorations.hasBorder,
+            update: (bool v) => _regularDecorations.copyWith(hasBorder: v),
+          ),
+          _decorationSwitch(
+            label: 'Close button',
+            value: _regularDecorations.hasCloseButton,
+            update: (bool v) => _regularDecorations.copyWith(hasCloseButton: v),
+          ),
+          _decorationSwitch(
+            label: 'Minimize button',
+            value: _regularDecorations.hasMinimizeButton,
+            update: (bool v) =>
+                _regularDecorations.copyWith(hasMinimizeButton: v),
+          ),
+          _decorationSwitch(
+            label: 'Maximize button',
+            value: _regularDecorations.hasMaximizeButton,
+            update: (bool v) =>
+                _regularDecorations.copyWith(hasMaximizeButton: v),
+          ),
+          _decorationSwitch(
+            label: 'Resizable',
+            value: _regularDecorations.isResizable,
+            update: (bool v) => _regularDecorations.copyWith(isResizable: v),
+          ),
+          _decorationSwitch(
+            label: 'Shadow',
+            value: _regularDecorations.hasShadow,
+            update: (bool v) => _regularDecorations.copyWith(hasShadow: v),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _decorationSwitch({
+    required String label,
+    required bool value,
+    required WindowDecorations Function(bool) update,
+  }) {
+    return SwitchListTile(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      title: Text(label),
+      value: value,
+      onChanged: (bool next) {
+        setState(() {
+          _regularDecorations = update(next);
+        });
+      },
     );
   }
 
@@ -358,6 +429,7 @@ class _WindowSettingsEditorState extends State<_WindowSettingsEditor> {
                 double.tryParse(_regularHeightController.text) ??
                     widget.settings.regularSize.height,
               );
+              widget.settings.regularDecorations = _regularDecorations;
               widget.settings.dialogSize = Size(
                 double.tryParse(_dialogWidthController.text) ??
                     widget.settings.dialogSize.width,
