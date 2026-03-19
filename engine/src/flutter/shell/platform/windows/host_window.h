@@ -46,11 +46,11 @@ class HostWindow {
       const WindowSizeRequest& preferred_size,
       const WindowConstraints& preferred_constraints,
       LPCWSTR title,
-      bool titled,
-      bool closable,
-      bool minimizable,
-      bool maximizable,
-      bool resizable);
+      bool titled = true,
+      bool closable = true,
+      bool minimizable = true,
+      bool maximizable = true,
+      bool resizable = true);
 
   // Creates a dialog Win32 window with a child view confined to its client
   // area. |window_manager| is a pointer to the window manager that manages the
@@ -70,7 +70,7 @@ class HostWindow {
       const WindowConstraints& preferred_constraints,
       LPCWSTR title,
       HWND parent,
-      bool resizable);
+      bool resizable = true);
 
   static std::unique_ptr<HostWindow> CreateTooltipWindow(
       WindowManager* window_manager,

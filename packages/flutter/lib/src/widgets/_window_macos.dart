@@ -584,8 +584,7 @@ class DialogWindowControllerMacOS extends DialogWindowController with _WindowCon
     BoxConstraints? preferredConstraints,
     String? title,
     bool resizable = true,
-  }) : _resizable = resizable,
-       _delegate = delegate,
+  }) : _delegate = delegate,
        super.empty() {
     _initController(owner);
 
@@ -606,8 +605,6 @@ class DialogWindowControllerMacOS extends DialogWindowController with _WindowCon
       setTitle(title);
     }
   }
-
-  bool _resizable;
 
   @override
   void _handleOnShouldClose() {
@@ -689,7 +686,6 @@ class DialogWindowControllerMacOS extends DialogWindowController with _WindowCon
   void setResizable(bool resizable) {
     _ensureNotDestroyed();
     _MacOSPlatformInterface.setResizable(getWindowHandle(), resizable);
-    _resizable = resizable;
     notifyListeners();
   }
 

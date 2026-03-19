@@ -16,11 +16,11 @@ class HostWindowRegular : public HostWindow {
                     const WindowSizeRequest& preferred_size,
                     const BoxConstraints& constraints,
                     LPCWSTR title,
-                    bool titled,
-                    bool closable,
-                    bool minimizable,
-                    bool maximizable,
-                    bool resizable);
+                    bool titled = true,
+                    bool closable = true,
+                    bool minimizable = true,
+                    bool maximizable = true,
+                    bool resizable = true);
 
  private:
   static DWORD BuildWindowStyle(bool titled,

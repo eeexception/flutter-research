@@ -313,10 +313,20 @@ class _TestRegularWindowController extends RegularWindowController with _ChildWi
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) : _delegate = delegate,
        _size = preferredSize ?? const Size(800, 600),
        _constraints = preferredConstraints ?? BoxConstraints.loose(const Size(1920, 1080)),
        _title = title ?? 'Test Window',
+       _isTitled = titled,
+       _isClosable = closable,
+       _isMinimizable = minimizable,
+       _isMaximizable = maximizable,
+       _isResizable = resizable,
        super.empty() {
     _constrainToBounds();
     rootView = _TestFlutterView(
@@ -337,6 +347,11 @@ class _TestRegularWindowController extends RegularWindowController with _ChildWi
   bool _isMaximized = false;
   bool _isMinimized = false;
   bool _isFullscreen = false;
+  bool _isTitled;
+  bool _isClosable;
+  bool _isMinimizable;
+  bool _isMaximizable;
+  bool _isResizable;
 
   @override
   Size get contentSize => isFullscreen || isMaximized ? rootView.display.size : _size;
@@ -411,6 +426,51 @@ class _TestRegularWindowController extends RegularWindowController with _ChildWi
     notifyListeners();
   }
 
+  @override
+  bool get isTitled => _isTitled;
+
+  @override
+  void setTitled(bool titled) {
+    _isTitled = titled;
+    notifyListeners();
+  }
+
+  @override
+  bool get isClosable => _isClosable;
+
+  @override
+  void setClosable(bool closable) {
+    _isClosable = closable;
+    notifyListeners();
+  }
+
+  @override
+  bool get isMinimizable => _isMinimizable;
+
+  @override
+  void setMinimizable(bool minimizable) {
+    _isMinimizable = minimizable;
+    notifyListeners();
+  }
+
+  @override
+  bool get isMaximizable => _isMaximizable;
+
+  @override
+  void setMaximizable(bool maximizable) {
+    _isMaximizable = maximizable;
+    notifyListeners();
+  }
+
+  @override
+  bool get isResizable => _isResizable;
+
+  @override
+  void setResizable(bool resizable) {
+    _isResizable = resizable;
+    notifyListeners();
+  }
+
   void _constrainToBounds() {
     final double width = _constraints.constrainWidth(_size.width);
     final double height = _constraints.constrainHeight(_size.height);
@@ -468,11 +528,13 @@ class _TestDialogWindowController extends DialogWindowController with _ChildWind
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    bool resizable = true,
   }) : _delegate = delegate,
        _parent = parent,
        _size = preferredSize ?? const Size(800, 600),
        _constraints = preferredConstraints ?? BoxConstraints.loose(const Size(1920, 1080)),
        _title = title ?? 'Test Window',
+       _isResizable = resizable,
        super.empty() {
     _constrainToBounds();
     rootView = _TestFlutterView(
@@ -493,6 +555,7 @@ class _TestDialogWindowController extends DialogWindowController with _ChildWind
   BoxConstraints _constraints;
   String _title;
   bool _isMinimized = false;
+  bool _isResizable;
 
   @override
   Size get contentSize => _size;
@@ -545,6 +608,15 @@ class _TestDialogWindowController extends DialogWindowController with _ChildWind
     if (_isMinimized) {
       windowingOwner.deactivateWindowController(this);
     }
+    notifyListeners();
+  }
+
+  @override
+  bool get isResizable => _isResizable;
+
+  @override
+  void setResizable(bool resizable) {
+    _isResizable = resizable;
     notifyListeners();
   }
 
@@ -926,6 +998,11 @@ class _TestWindowingOwner extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) {
     return _TestRegularWindowController(
       delegate: delegate,
@@ -934,6 +1011,11 @@ class _TestWindowingOwner extends WindowingOwner {
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
       title: title,
+      titled: titled,
+      closable: closable,
+      minimizable: minimizable,
+      maximizable: maximizable,
+      resizable: resizable,
     );
   }
 
@@ -945,6 +1027,7 @@ class _TestWindowingOwner extends WindowingOwner {
     BoxConstraints? preferredConstraints,
     BaseWindowController? parent,
     String? title,
+    bool resizable = true,
   }) {
     return _TestDialogWindowController(
       delegate: delegate,
@@ -954,6 +1037,7 @@ class _TestWindowingOwner extends WindowingOwner {
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
       title: title,
+      resizable: resizable,
     );
   }
 
