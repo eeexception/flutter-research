@@ -80,12 +80,22 @@ class WindowingOwnerMacOS extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) {
     final res = RegularWindowControllerMacOS(
       owner: this,
       delegate: delegate,
       preferredSize: preferredSize,
       title: title,
+      titled: titled,
+      closable: closable,
+      minimizable: minimizable,
+      maximizable: maximizable,
+      resizable: resizable,
     );
     _activeControllers.add(res);
     return res;
@@ -98,6 +108,7 @@ class WindowingOwnerMacOS extends WindowingOwner {
     BoxConstraints? preferredConstraints,
     BaseWindowController? parent,
     String? title,
+    bool resizable = true,
   }) {
     final res = DialogWindowControllerMacOS(
       owner: this,
@@ -105,6 +116,7 @@ class WindowingOwnerMacOS extends WindowingOwner {
       preferredSize: preferredSize,
       parent: parent,
       title: title,
+      resizable: resizable,
     );
     _activeControllers.add(res);
     return res;
@@ -376,6 +388,11 @@ class RegularWindowControllerMacOS extends RegularWindowController with _WindowC
     required Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) : _delegate = delegate,
        super.empty() {
     _initController(owner);
@@ -386,6 +403,11 @@ class RegularWindowControllerMacOS extends RegularWindowController with _WindowC
       onShouldClose: _onShouldClose.nativeFunction,
       onWillClose: _onWillClose.nativeFunction,
       onNotifyListeners: _onResize.nativeFunction,
+      titled: titled,
+      closable: closable,
+      minimizable: minimizable,
+      maximizable: maximizable,
+      resizable: resizable,
     );
     final FlutterView flutterView = WidgetsBinding.instance.platformDispatcher.views.firstWhere(
       (FlutterView view) => view.viewId == viewId,
@@ -492,6 +514,56 @@ class RegularWindowControllerMacOS extends RegularWindowController with _WindowC
 
   @override
   String get title => _MacOSPlatformInterface.getTitle(getWindowHandle());
+
+  @override
+  bool get isTitled => _MacOSPlatformInterface.isTitled(getWindowHandle());
+
+  @override
+  void setTitled(bool titled) {
+    _ensureNotDestroyed();
+    _MacOSPlatformInterface.setTitled(getWindowHandle(), titled);
+    notifyListeners();
+  }
+
+  @override
+  bool get isClosable => _MacOSPlatformInterface.isClosable(getWindowHandle());
+
+  @override
+  void setClosable(bool closable) {
+    _ensureNotDestroyed();
+    _MacOSPlatformInterface.setClosable(getWindowHandle(), closable);
+    notifyListeners();
+  }
+
+  @override
+  bool get isMinimizable => _MacOSPlatformInterface.isMinimizable(getWindowHandle());
+
+  @override
+  void setMinimizable(bool minimizable) {
+    _ensureNotDestroyed();
+    _MacOSPlatformInterface.setMinimizable(getWindowHandle(), minimizable);
+    notifyListeners();
+  }
+
+  @override
+  bool get isMaximizable => _MacOSPlatformInterface.isMaximizable(getWindowHandle());
+
+  @override
+  void setMaximizable(bool maximizable) {
+    _ensureNotDestroyed();
+    _MacOSPlatformInterface.setMaximizable(getWindowHandle(), maximizable);
+    notifyListeners();
+  }
+
+  @override
+  bool get isResizable => _MacOSPlatformInterface.isResizable(getWindowHandle());
+
+  @override
+  void setResizable(bool resizable) {
+    _ensureNotDestroyed();
+    _MacOSPlatformInterface.setResizable(getWindowHandle(), resizable);
+    notifyListeners();
+  }
 }
 
 /// Implementation of [DialogWindowController] for the macOS platform.
@@ -511,7 +583,9 @@ class DialogWindowControllerMacOS extends DialogWindowController with _WindowCon
     this.parent,
     BoxConstraints? preferredConstraints,
     String? title,
-  }) : _delegate = delegate,
+    bool resizable = true,
+  }) : _resizable = resizable,
+       _delegate = delegate,
        super.empty() {
     _initController(owner);
 
@@ -522,6 +596,7 @@ class DialogWindowControllerMacOS extends DialogWindowController with _WindowCon
       onWillClose: _onWillClose.nativeFunction,
       onNotifyListeners: _onResize.nativeFunction,
       parentViewId: parent?.rootView.viewId,
+      resizable: resizable,
     );
     final FlutterView flutterView = WidgetsBinding.instance.platformDispatcher.views.firstWhere(
       (FlutterView view) => view.viewId == viewId,
@@ -531,6 +606,8 @@ class DialogWindowControllerMacOS extends DialogWindowController with _WindowCon
       setTitle(title);
     }
   }
+
+  bool _resizable;
 
   @override
   void _handleOnShouldClose() {
@@ -606,6 +683,17 @@ class DialogWindowControllerMacOS extends DialogWindowController with _WindowCon
   String get title => _MacOSPlatformInterface.getTitle(getWindowHandle());
 
   @override
+  bool get isResizable => _MacOSPlatformInterface.isResizable(getWindowHandle());
+
+  @override
+  void setResizable(bool resizable) {
+    _ensureNotDestroyed();
+    _MacOSPlatformInterface.setResizable(getWindowHandle(), resizable);
+    _resizable = resizable;
+    notifyListeners();
+  }
+
+  @override
   final BaseWindowController? parent;
 }
 
@@ -634,6 +722,17 @@ final class _WindowCreationRequest extends Struct {
     >
   >
   onGetWindowPosition;
+
+  @Bool()
+  external bool titled;
+  @Bool()
+  external bool closable;
+  @Bool()
+  external bool minimizable;
+  @Bool()
+  external bool maximizable;
+  @Bool()
+  external bool resizable;
 }
 
 final class _Size extends Struct {
@@ -740,11 +839,21 @@ class _MacOSPlatformInterface {
     required Pointer<NativeFunction<Void Function()>> onShouldClose,
     required Pointer<NativeFunction<Void Function()>> onWillClose,
     required Pointer<NativeFunction<Void Function()>> onNotifyListeners,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) {
     final Pointer<_WindowCreationRequest> request = _allocator<_WindowCreationRequest>()
       ..ref.onShouldClose = onShouldClose
       ..ref.onWillClose = onWillClose
-      ..ref.onNotifyListeners = onNotifyListeners;
+      ..ref.onNotifyListeners = onNotifyListeners
+      ..ref.titled = titled
+      ..ref.closable = closable
+      ..ref.minimizable = minimizable
+      ..ref.maximizable = maximizable
+      ..ref.resizable = resizable;
 
     if (preferredSize != null) {
       request.ref
@@ -782,12 +891,18 @@ class _MacOSPlatformInterface {
     required Pointer<NativeFunction<Void Function()>> onShouldClose,
     required Pointer<NativeFunction<Void Function()>> onWillClose,
     required Pointer<NativeFunction<Void Function()>> onNotifyListeners,
+    bool resizable = true,
   }) {
     final Pointer<_WindowCreationRequest> request = _allocator<_WindowCreationRequest>()
       ..ref.onShouldClose = onShouldClose
       ..ref.onWillClose = onWillClose
       ..ref.onNotifyListeners = onNotifyListeners
-      ..ref.parentViewId = parentViewId ?? 0;
+      ..ref.parentViewId = parentViewId ?? 0
+      ..ref.titled = true
+      ..ref.closable = true
+      ..ref.minimizable = false
+      ..ref.maximizable = false
+      ..ref.resizable = resizable;
 
     if (preferredSize != null) {
       request.ref
@@ -920,6 +1035,36 @@ class _MacOSPlatformInterface {
 
   @Native<Void Function(Pointer<Void>)>(symbol: 'InternalFlutter_Window_UpdatePosition')
   external static void updateWindowPosition(Pointer<Void> windowHandle);
+
+  @Native<Void Function(Pointer<Void>, Bool)>(symbol: 'InternalFlutter_Window_SetTitled')
+  external static void setTitled(Pointer<Void> windowHandle, bool titled);
+
+  @Native<Bool Function(Pointer<Void>)>(symbol: 'InternalFlutter_Window_IsTitled')
+  external static bool isTitled(Pointer<Void> windowHandle);
+
+  @Native<Void Function(Pointer<Void>, Bool)>(symbol: 'InternalFlutter_Window_SetClosable')
+  external static void setClosable(Pointer<Void> windowHandle, bool closable);
+
+  @Native<Bool Function(Pointer<Void>)>(symbol: 'InternalFlutter_Window_IsClosable')
+  external static bool isClosable(Pointer<Void> windowHandle);
+
+  @Native<Void Function(Pointer<Void>, Bool)>(symbol: 'InternalFlutter_Window_SetMinimizable')
+  external static void setMinimizable(Pointer<Void> windowHandle, bool minimizable);
+
+  @Native<Bool Function(Pointer<Void>)>(symbol: 'InternalFlutter_Window_IsMinimizable')
+  external static bool isMinimizable(Pointer<Void> windowHandle);
+
+  @Native<Void Function(Pointer<Void>, Bool)>(symbol: 'InternalFlutter_Window_SetMaximizable')
+  external static void setMaximizable(Pointer<Void> windowHandle, bool maximizable);
+
+  @Native<Bool Function(Pointer<Void>)>(symbol: 'InternalFlutter_Window_IsMaximizable')
+  external static bool isMaximizable(Pointer<Void> windowHandle);
+
+  @Native<Void Function(Pointer<Void>, Bool)>(symbol: 'InternalFlutter_Window_SetResizable')
+  external static void setResizable(Pointer<Void> windowHandle, bool resizable);
+
+  @Native<Bool Function(Pointer<Void>)>(symbol: 'InternalFlutter_Window_IsResizable')
+  external static bool isResizable(Pointer<Void> windowHandle);
 }
 
 // FFI utilities.

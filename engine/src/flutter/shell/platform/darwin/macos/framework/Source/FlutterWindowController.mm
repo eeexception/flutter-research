@@ -265,8 +265,11 @@ static void FlipRect(NSRect& rect, const NSRect& globalScreenFrame) {
   [window setReleasedWhenClosed:NO];
 
   window.contentViewController = controller;
-  window.styleMask =
-      NSWindowStyleMaskResizable | NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
+  {
+    NSWindowStyleMask styleMask = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
+    if (request->resizable) styleMask |= NSWindowStyleMaskResizable;
+    window.styleMask = styleMask;
+  }
   window.collectionBehavior = NSWindowCollectionBehaviorFullScreenAuxiliary;
   if (request->has_size) {
     [window flutterSetContentSize:request->size];
@@ -372,8 +375,15 @@ static void FlipRect(NSRect& rect, const NSRect& globalScreenFrame) {
   [window setReleasedWhenClosed:NO];
 
   window.contentViewController = controller;
-  window.styleMask = NSWindowStyleMaskResizable | NSWindowStyleMaskTitled |
-                     NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
+  {
+    NSWindowStyleMask styleMask = 0;
+    if (request->titled)       styleMask |= NSWindowStyleMaskTitled;
+    if (request->closable)     styleMask |= NSWindowStyleMaskClosable;
+    if (request->minimizable)  styleMask |= NSWindowStyleMaskMiniaturizable;
+    if (request->resizable)    styleMask |= NSWindowStyleMaskResizable;
+    if (styleMask == 0) styleMask = NSWindowStyleMaskBorderless;
+    window.styleMask = styleMask;
+  }
   if (request->has_size) {
     [window flutterSetContentSize:request->size];
   }
@@ -578,6 +588,76 @@ void InternalFlutter_Window_UpdatePosition(void* window) {
   NSWindow* w = (__bridge NSWindow*)window;
   FlutterWindowOwner* owner = (FlutterWindowOwner*)w.delegate;
   [owner updatePosition];
+}
+
+void InternalFlutter_Window_SetTitled(void* window, bool titled) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  if (titled) {
+    w.styleMask |= NSWindowStyleMaskTitled;
+  } else {
+    w.styleMask &= ~NSWindowStyleMaskTitled;
+  }
+}
+
+bool InternalFlutter_Window_IsTitled(void* window) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  return (w.styleMask & NSWindowStyleMaskTitled) != 0;
+}
+
+void InternalFlutter_Window_SetClosable(void* window, bool closable) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  if (closable) {
+    w.styleMask |= NSWindowStyleMaskClosable;
+  } else {
+    w.styleMask &= ~NSWindowStyleMaskClosable;
+  }
+}
+
+bool InternalFlutter_Window_IsClosable(void* window) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  return (w.styleMask & NSWindowStyleMaskClosable) != 0;
+}
+
+void InternalFlutter_Window_SetMinimizable(void* window, bool minimizable) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  if (minimizable) {
+    w.styleMask |= NSWindowStyleMaskMiniaturizable;
+  } else {
+    w.styleMask &= ~NSWindowStyleMaskMiniaturizable;
+  }
+}
+
+bool InternalFlutter_Window_IsMinimizable(void* window) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  return (w.styleMask & NSWindowStyleMaskMiniaturizable) != 0;
+}
+
+void InternalFlutter_Window_SetMaximizable(void* window, bool maximizable) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  if (maximizable) {
+    w.collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
+  } else {
+    w.collectionBehavior &= ~NSWindowCollectionBehaviorFullScreenPrimary;
+  }
+}
+
+bool InternalFlutter_Window_IsMaximizable(void* window) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  return (w.collectionBehavior & NSWindowCollectionBehaviorFullScreenPrimary) != 0;
+}
+
+void InternalFlutter_Window_SetResizable(void* window, bool resizable) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  if (resizable) {
+    w.styleMask |= NSWindowStyleMaskResizable;
+  } else {
+    w.styleMask &= ~NSWindowStyleMaskResizable;
+  }
+}
+
+bool InternalFlutter_Window_IsResizable(void* window) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  return (w.styleMask & NSWindowStyleMaskResizable) != 0;
 }
 
 // NOLINTEND(google-objc-function-naming)

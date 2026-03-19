@@ -71,6 +71,11 @@ struct FlutterWindowCreationRequest {
   FlutterWindowRect* (*on_get_window_position)(const FlutterWindowSize& child_size,
                                                const FlutterWindowRect& parent_rect,
                                                const FlutterWindowRect& output_rect);
+  bool titled;
+  bool closable;
+  bool minimizable;
+  bool maximizable;
+  bool resizable;
 };
 
 extern "C" {
@@ -143,6 +148,36 @@ bool InternalFlutter_Window_IsActivated(void* window);
 
 FLUTTER_DARWIN_EXPORT
 void InternalFlutter_Window_UpdatePosition(void* window);
+
+FLUTTER_DARWIN_EXPORT
+void InternalFlutter_Window_SetTitled(void* window, bool titled);
+
+FLUTTER_DARWIN_EXPORT
+bool InternalFlutter_Window_IsTitled(void* window);
+
+FLUTTER_DARWIN_EXPORT
+void InternalFlutter_Window_SetClosable(void* window, bool closable);
+
+FLUTTER_DARWIN_EXPORT
+bool InternalFlutter_Window_IsClosable(void* window);
+
+FLUTTER_DARWIN_EXPORT
+void InternalFlutter_Window_SetMinimizable(void* window, bool minimizable);
+
+FLUTTER_DARWIN_EXPORT
+bool InternalFlutter_Window_IsMinimizable(void* window);
+
+FLUTTER_DARWIN_EXPORT
+void InternalFlutter_Window_SetMaximizable(void* window, bool maximizable);
+
+FLUTTER_DARWIN_EXPORT
+bool InternalFlutter_Window_IsMaximizable(void* window);
+
+FLUTTER_DARWIN_EXPORT
+void InternalFlutter_Window_SetResizable(void* window, bool resizable);
+
+FLUTTER_DARWIN_EXPORT
+bool InternalFlutter_Window_IsResizable(void* window);
 
 // NOLINTEND(google-objc-function-naming)
 }

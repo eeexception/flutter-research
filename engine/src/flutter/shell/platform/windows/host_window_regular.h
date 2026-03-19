@@ -15,12 +15,24 @@ class HostWindowRegular : public HostWindow {
                     FlutterWindowsEngine* engine,
                     const WindowSizeRequest& preferred_size,
                     const BoxConstraints& constraints,
-                    LPCWSTR title);
+                    LPCWSTR title,
+                    bool titled,
+                    bool closable,
+                    bool minimizable,
+                    bool maximizable,
+                    bool resizable);
 
  private:
+  static DWORD BuildWindowStyle(bool titled,
+                                bool closable,
+                                bool minimizable,
+                                bool maximizable,
+                                bool resizable);
+
   static Rect GetInitialRect(FlutterWindowsEngine* engine,
                              const WindowSizeRequest& preferred_size,
-                             const BoxConstraints& constraints);
+                             const BoxConstraints& constraints,
+                             DWORD window_style);
 };
 }  // namespace flutter
 

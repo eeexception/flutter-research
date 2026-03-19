@@ -57,6 +57,11 @@ struct RegularWindowCreationRequest {
   WindowSizeRequest preferred_size;
   WindowConstraints preferred_constraints;
   LPCWSTR title;
+  bool titled;
+  bool closable;
+  bool minimizable;
+  bool maximizable;
+  bool resizable;
 };
 
 struct DialogWindowCreationRequest {
@@ -64,6 +69,7 @@ struct DialogWindowCreationRequest {
   WindowConstraints preferred_constraints;
   LPCWSTR title;
   HWND parent_or_null;
+  bool resizable;
 };
 
 typedef WindowRect* (*GetWindowPositionCallback)(const WindowSize& child_size,
@@ -208,6 +214,36 @@ bool InternalFlutterWindows_WindowManager_GetFullscreen(HWND hwnd);
 
 FLUTTER_EXPORT
 void InternalFlutterWindows_WindowManager_UpdateTooltipPosition(HWND hwnd);
+
+FLUTTER_EXPORT
+void InternalFlutterWindows_Window_SetTitled(HWND hwnd, bool titled);
+
+FLUTTER_EXPORT
+bool InternalFlutterWindows_Window_IsTitled(HWND hwnd);
+
+FLUTTER_EXPORT
+void InternalFlutterWindows_Window_SetClosable(HWND hwnd, bool closable);
+
+FLUTTER_EXPORT
+bool InternalFlutterWindows_Window_IsClosable(HWND hwnd);
+
+FLUTTER_EXPORT
+void InternalFlutterWindows_Window_SetMinimizable(HWND hwnd, bool minimizable);
+
+FLUTTER_EXPORT
+bool InternalFlutterWindows_Window_IsMinimizable(HWND hwnd);
+
+FLUTTER_EXPORT
+void InternalFlutterWindows_Window_SetMaximizable(HWND hwnd, bool maximizable);
+
+FLUTTER_EXPORT
+bool InternalFlutterWindows_Window_IsMaximizable(HWND hwnd);
+
+FLUTTER_EXPORT
+void InternalFlutterWindows_Window_SetResizable(HWND hwnd, bool resizable);
+
+FLUTTER_EXPORT
+bool InternalFlutterWindows_Window_IsResizable(HWND hwnd);
 }
 
 #endif  // FLUTTER_SHELL_PLATFORM_WINDOWS_WINDOW_MANAGER_H_

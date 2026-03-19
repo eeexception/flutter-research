@@ -91,6 +91,11 @@ class WindowingOwnerLinux extends WindowingOwner {
     BoxConstraints? preferredConstraints,
     String? title,
     required RegularWindowControllerDelegate delegate,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) {
     final controller = RegularWindowControllerLinux(
       owner: this,
@@ -98,6 +103,11 @@ class WindowingOwnerLinux extends WindowingOwner {
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
       title: title,
+      titled: titled,
+      closable: closable,
+      minimizable: minimizable,
+      maximizable: maximizable,
+      resizable: resizable,
     );
     _windows[controller.rootView.viewId] = controller._window;
     return controller;
@@ -111,6 +121,7 @@ class WindowingOwnerLinux extends WindowingOwner {
     BoxConstraints? preferredConstraints,
     BaseWindowController? parent,
     String? title,
+    bool resizable = true,
   }) {
     final controller = DialogWindowControllerLinux(
       owner: this,
@@ -119,6 +130,7 @@ class WindowingOwnerLinux extends WindowingOwner {
       preferredConstraints: preferredConstraints,
       parent: parent,
       title: title,
+      resizable: resizable,
     );
     _windows[controller.rootView.viewId] = controller._window;
     return controller;
@@ -189,9 +201,16 @@ class RegularWindowControllerLinux extends RegularWindowController {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) : _owner = owner,
        _delegate = delegate,
        _window = _GtkWindow(_GtkWindowType.toplevel),
+       _minimizable = minimizable,
+       _maximizable = maximizable,
        super.empty() {
     if (!isWindowingEnabled) {
       throw UnsupportedError(_kWindowingDisabledErrorMessage);
@@ -217,6 +236,15 @@ class RegularWindowControllerLinux extends RegularWindowController {
     if (title != null) {
       setTitle(title);
     }
+    if (!titled) {
+      _window.setDecorated(false);
+    }
+    if (!closable) {
+      _window.setDeletable(false);
+    }
+    if (!resizable) {
+      _window.setResizable(false);
+    }
     final engine = _FlEngine.current();
     final view = _FlView(engine);
     final int viewId = view.getId();
@@ -233,6 +261,8 @@ class RegularWindowControllerLinux extends RegularWindowController {
   final _GtkWindow _window;
   late final _FlWindowMonitor _windowMonitor;
   bool _destroyed = false;
+  bool _minimizable;
+  bool _maximizable;
 
   @override
   @internal
@@ -270,6 +300,61 @@ class RegularWindowControllerLinux extends RegularWindowController {
   @override
   @internal
   bool get isFullscreen => _window.getWindow().getState().contains(_GdkWindowState.fullscreen);
+
+  @override
+  @internal
+  bool get isTitled => _window.getDecorated();
+
+  @override
+  @internal
+  void setTitled(bool titled) {
+    _window.setDecorated(titled);
+    notifyListeners();
+  }
+
+  @override
+  @internal
+  bool get isClosable => _window.getDeletable();
+
+  @override
+  @internal
+  void setClosable(bool closable) {
+    _window.setDeletable(closable);
+    notifyListeners();
+  }
+
+  @override
+  @internal
+  bool get isMinimizable => _minimizable;
+
+  @override
+  @internal
+  void setMinimizable(bool minimizable) {
+    _minimizable = minimizable;
+    notifyListeners();
+  }
+
+  @override
+  @internal
+  bool get isMaximizable => _maximizable;
+
+  @override
+  @internal
+  void setMaximizable(bool maximizable) {
+    _maximizable = maximizable;
+    notifyListeners();
+  }
+
+  @override
+  @internal
+  bool get isResizable => _window.getResizable();
+
+  @override
+  @internal
+  void setResizable(bool resizable) {
+    _window.setResizable(resizable);
+    notifyListeners();
+  }
 
   @override
   @internal
@@ -358,6 +443,7 @@ class DialogWindowControllerLinux extends DialogWindowController {
     BoxConstraints? preferredConstraints,
     BaseWindowController? parent,
     String? title,
+    bool resizable = true,
   }) : _owner = owner,
        _delegate = delegate,
        _parent = parent,
@@ -395,6 +481,9 @@ class DialogWindowControllerLinux extends DialogWindowController {
     }
     if (title != null) {
       setTitle(title);
+    }
+    if (!resizable) {
+      _window.setResizable(false);
     }
     final engine = _FlEngine.current();
     final view = _FlView(engine);
@@ -446,6 +535,17 @@ class DialogWindowControllerLinux extends DialogWindowController {
   @internal
   // NOTE: On Wayland this is never set, see https://gitlab.gnome.org/GNOME/gtk/-/issues/67
   bool get isMinimized => _window.getWindow().getState().contains(_GdkWindowState.iconified);
+
+  @override
+  @internal
+  bool get isResizable => _window.getResizable();
+
+  @override
+  @internal
+  void setResizable(bool resizable) {
+    _window.setResizable(resizable);
+    notifyListeners();
+  }
 
   @override
   @internal
@@ -823,6 +923,36 @@ class _GtkWindow extends _GtkContainer {
     return _gtkWindowIsActive(instance);
   }
 
+  /// Sets whether the window is decorated (has title bar and borders).
+  void setDecorated(bool decorated) {
+    _gtkWindowSetDecorated(instance, decorated);
+  }
+
+  /// Gets whether the window is decorated.
+  bool getDecorated() {
+    return _gtkWindowGetDecorated(instance);
+  }
+
+  /// Sets whether the window is resizable by the user.
+  void setResizable(bool resizable) {
+    _gtkWindowSetResizable(instance, resizable);
+  }
+
+  /// Gets whether the window is resizable.
+  bool getResizable() {
+    return _gtkWindowGetResizable(instance);
+  }
+
+  /// Sets whether the window has a close button.
+  void setDeletable(bool deletable) {
+    _gtkWindowSetDeletable(instance, deletable);
+  }
+
+  /// Gets whether the window has a close button.
+  bool getDeletable() {
+    return _gtkWindowGetDeletable(instance);
+  }
+
   @ffi.Native<ffi.Pointer<ffi.NativeType> Function(ffi.Int)>(symbol: 'gtk_window_new')
   external static ffi.Pointer<ffi.NativeType> _gtkWindowNew(int type);
 
@@ -918,6 +1048,30 @@ class _GtkWindow extends _GtkContainer {
 
   @ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.NativeType>)>(symbol: 'gtk_window_is_active')
   external static bool _gtkWindowIsActive(ffi.Pointer<ffi.NativeType> widget);
+
+  @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.NativeType>, ffi.Bool)>(
+    symbol: 'gtk_window_set_decorated',
+  )
+  external static void _gtkWindowSetDecorated(ffi.Pointer<ffi.NativeType> window, bool decorated);
+
+  @ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.NativeType>)>(symbol: 'gtk_window_get_decorated')
+  external static bool _gtkWindowGetDecorated(ffi.Pointer<ffi.NativeType> window);
+
+  @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.NativeType>, ffi.Bool)>(
+    symbol: 'gtk_window_set_resizable',
+  )
+  external static void _gtkWindowSetResizable(ffi.Pointer<ffi.NativeType> window, bool resizable);
+
+  @ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.NativeType>)>(symbol: 'gtk_window_get_resizable')
+  external static bool _gtkWindowGetResizable(ffi.Pointer<ffi.NativeType> window);
+
+  @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.NativeType>, ffi.Bool)>(
+    symbol: 'gtk_window_set_deletable',
+  )
+  external static void _gtkWindowSetDeletable(ffi.Pointer<ffi.NativeType> window, bool deletable);
+
+  @ffi.Native<ffi.Bool Function(ffi.Pointer<ffi.NativeType>)>(symbol: 'gtk_window_get_deletable')
+  external static bool _gtkWindowGetDeletable(ffi.Pointer<ffi.NativeType> window);
 }
 
 /// Wraps FlEngine.

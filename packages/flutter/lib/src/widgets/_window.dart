@@ -229,6 +229,11 @@ abstract class RegularWindowController extends BaseWindowController {
     BoxConstraints? preferredConstraints,
     String? title,
     RegularWindowControllerDelegate? delegate,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) {
     if (!isWindowingEnabled) {
       throw UnsupportedError(_kWindowingDisabledErrorMessage);
@@ -244,6 +249,11 @@ abstract class RegularWindowController extends BaseWindowController {
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
       title: title,
+      titled: titled,
+      closable: closable,
+      minimizable: minimizable,
+      maximizable: maximizable,
+      resizable: resizable,
     );
   }
 
@@ -375,6 +385,66 @@ abstract class RegularWindowController extends BaseWindowController {
   /// {@macro flutter.widgets.windowing.experimental}
   @internal
   void setFullscreen(bool fullscreen, {Display? display});
+
+  /// Whether the window has a title bar.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  bool get isTitled;
+
+  /// Sets whether the window has a title bar.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  void setTitled(bool titled);
+
+  /// Whether the window has a close button.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  bool get isClosable;
+
+  /// Sets whether the window has a close button.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  void setClosable(bool closable);
+
+  /// Whether the window has a minimize button.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  bool get isMinimizable;
+
+  /// Sets whether the window has a minimize button.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  void setMinimizable(bool minimizable);
+
+  /// Whether the window has a maximize button.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  bool get isMaximizable;
+
+  /// Sets whether the window has a maximize button.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  void setMaximizable(bool maximizable);
+
+  /// Whether the window can be resized by the user.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  bool get isResizable;
+
+  /// Sets whether the window can be resized by the user.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  void setResizable(bool resizable);
 }
 
 /// Delegate class for dialog window controller.
@@ -516,6 +586,7 @@ abstract class DialogWindowController extends BaseWindowController {
     BaseWindowController? parent,
     String? title,
     DialogWindowControllerDelegate? delegate,
+    bool resizable = true,
   }) {
     WidgetsFlutterBinding.ensureInitialized();
     final WindowingOwner owner = WidgetsBinding.instance.windowingOwner;
@@ -525,6 +596,7 @@ abstract class DialogWindowController extends BaseWindowController {
       preferredConstraints: preferredConstraints,
       title: title,
       parent: parent,
+      resizable: resizable,
     );
   }
 
@@ -619,6 +691,18 @@ abstract class DialogWindowController extends BaseWindowController {
   /// {@macro flutter.widgets.windowing.experimental}
   @internal
   void setMinimized(bool minimized);
+
+  /// Whether the dialog window can be resized by the user.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  bool get isResizable;
+
+  /// Sets whether the dialog window can be resized by the user.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  void setResizable(bool resizable);
 }
 
 /// Delegate class for tooltip window controller.
@@ -1152,6 +1236,11 @@ abstract class WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   });
 
   /// Creates a [DialogWindowController] with the provided properties.
@@ -1168,6 +1257,7 @@ abstract class WindowingOwner {
     BoxConstraints? preferredConstraints,
     BaseWindowController? parent,
     String? title,
+    bool resizable = true,
   });
 
   /// Creates a [TooltipWindowController] with the provided properties.
@@ -1251,6 +1341,11 @@ class _WindowingOwnerUnsupported extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) {
     throw UnsupportedError(errorMessage);
   }
@@ -1262,6 +1357,7 @@ class _WindowingOwnerUnsupported extends WindowingOwner {
     BoxConstraints? preferredConstraints,
     BaseWindowController? parent,
     String? title,
+    bool resizable = true,
   }) {
     throw UnsupportedError(errorMessage);
   }
@@ -1655,7 +1751,7 @@ class SatelliteWindow extends StatelessWidget {
   }
 }
 
-enum _WindowControllerAspect { contentSize, title, activated, maximized, minimized, fullscreen }
+enum _WindowControllerAspect { contentSize, title, activated, maximized, minimized, fullscreen, titled, closable, minimizable, maximizable, resizable }
 
 /// Provides descendants with access to the [BaseWindowController] associated with
 /// the window that is being rendered.
@@ -2017,6 +2113,176 @@ class WindowScope extends InheritedModel<_WindowControllerAspect> {
     };
   }
 
+  /// Returns whether the window in the nearest [WindowScope] has a title bar.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static bool isTitledOf(BuildContext context) {
+    final BaseWindowController controller = _of(context, _WindowControllerAspect.titled);
+    return switch (controller) {
+      RegularWindowController() => controller.isTitled,
+      DialogWindowController() => true,
+      TooltipWindowController() => false,
+      PopupWindowController() => false,
+      SatelliteWindowController() => true,
+    };
+  }
+
+  /// Returns whether the window in the nearest [WindowScope] has a title bar,
+  /// or null if not found.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static bool? maybeIsTitledOf(BuildContext context) {
+    final BaseWindowController? controller = _maybeOf(context, _WindowControllerAspect.titled);
+    if (controller == null) {
+      return null;
+    }
+    return switch (controller) {
+      RegularWindowController() => controller.isTitled,
+      DialogWindowController() => true,
+      TooltipWindowController() => false,
+      PopupWindowController() => false,
+      SatelliteWindowController() => true,
+    };
+  }
+
+  /// Returns whether the window in the nearest [WindowScope] has a close button.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static bool isClosableOf(BuildContext context) {
+    final BaseWindowController controller = _of(context, _WindowControllerAspect.closable);
+    return switch (controller) {
+      RegularWindowController() => controller.isClosable,
+      DialogWindowController() => true,
+      TooltipWindowController() => false,
+      PopupWindowController() => false,
+      SatelliteWindowController() => true,
+    };
+  }
+
+  /// Returns whether the window in the nearest [WindowScope] has a close button,
+  /// or null if not found.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static bool? maybeIsClosableOf(BuildContext context) {
+    final BaseWindowController? controller = _maybeOf(context, _WindowControllerAspect.closable);
+    if (controller == null) {
+      return null;
+    }
+    return switch (controller) {
+      RegularWindowController() => controller.isClosable,
+      DialogWindowController() => true,
+      TooltipWindowController() => false,
+      PopupWindowController() => false,
+      SatelliteWindowController() => true,
+    };
+  }
+
+  /// Returns whether the window in the nearest [WindowScope] has a minimize button.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static bool isMinimizableOf(BuildContext context) {
+    final BaseWindowController controller = _of(context, _WindowControllerAspect.minimizable);
+    return switch (controller) {
+      RegularWindowController() => controller.isMinimizable,
+      DialogWindowController() => false,
+      TooltipWindowController() => false,
+      PopupWindowController() => false,
+      SatelliteWindowController() => false,
+    };
+  }
+
+  /// Returns whether the window in the nearest [WindowScope] has a minimize button,
+  /// or null if not found.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static bool? maybeIsMinimizableOf(BuildContext context) {
+    final BaseWindowController? controller = _maybeOf(context, _WindowControllerAspect.minimizable);
+    if (controller == null) {
+      return null;
+    }
+    return switch (controller) {
+      RegularWindowController() => controller.isMinimizable,
+      DialogWindowController() => false,
+      TooltipWindowController() => false,
+      PopupWindowController() => false,
+      SatelliteWindowController() => false,
+    };
+  }
+
+  /// Returns whether the window in the nearest [WindowScope] has a maximize button.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static bool isMaximizableOf(BuildContext context) {
+    final BaseWindowController controller = _of(context, _WindowControllerAspect.maximizable);
+    return switch (controller) {
+      RegularWindowController() => controller.isMaximizable,
+      DialogWindowController() => false,
+      TooltipWindowController() => false,
+      PopupWindowController() => false,
+      SatelliteWindowController() => false,
+    };
+  }
+
+  /// Returns whether the window in the nearest [WindowScope] has a maximize button,
+  /// or null if not found.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static bool? maybeIsMaximizableOf(BuildContext context) {
+    final BaseWindowController? controller = _maybeOf(context, _WindowControllerAspect.maximizable);
+    if (controller == null) {
+      return null;
+    }
+    return switch (controller) {
+      RegularWindowController() => controller.isMaximizable,
+      DialogWindowController() => false,
+      TooltipWindowController() => false,
+      PopupWindowController() => false,
+      SatelliteWindowController() => false,
+    };
+  }
+
+  /// Returns whether the window in the nearest [WindowScope] can be resized.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static bool isResizableOf(BuildContext context) {
+    final BaseWindowController controller = _of(context, _WindowControllerAspect.resizable);
+    return switch (controller) {
+      RegularWindowController() => controller.isResizable,
+      DialogWindowController() => controller.isResizable,
+      TooltipWindowController() => false,
+      PopupWindowController() => false,
+      SatelliteWindowController() => true,
+    };
+  }
+
+  /// Returns whether the window in the nearest [WindowScope] can be resized,
+  /// or null if not found.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  static bool? maybeIsResizableOf(BuildContext context) {
+    final BaseWindowController? controller = _maybeOf(context, _WindowControllerAspect.resizable);
+    if (controller == null) {
+      return null;
+    }
+    return switch (controller) {
+      RegularWindowController() => controller.isResizable,
+      DialogWindowController() => controller.isResizable,
+      TooltipWindowController() => false,
+      PopupWindowController() => false,
+      SatelliteWindowController() => true,
+    };
+  }
+
   static BaseWindowController _of(BuildContext context, [_WindowControllerAspect? aspect]) {
     if (!isWindowingEnabled) {
       throw UnsupportedError(_kWindowingDisabledErrorMessage);
@@ -2119,6 +2385,52 @@ class WindowScope extends InheritedModel<_WindowControllerAspect> {
                 regular.isFullscreen !=
                     (oldWidget.controller as RegularWindowController).isFullscreen,
               DialogWindowController() => false,
+              TooltipWindowController() => false,
+              PopupWindowController() => false,
+              SatelliteWindowController() => false,
+            },
+            _WindowControllerAspect.titled => switch (controller) {
+              final RegularWindowController regular =>
+                regular.isTitled !=
+                    (oldWidget.controller as RegularWindowController).isTitled,
+              DialogWindowController() => false,
+              TooltipWindowController() => false,
+              PopupWindowController() => false,
+              SatelliteWindowController() => false,
+            },
+            _WindowControllerAspect.closable => switch (controller) {
+              final RegularWindowController regular =>
+                regular.isClosable !=
+                    (oldWidget.controller as RegularWindowController).isClosable,
+              DialogWindowController() => false,
+              TooltipWindowController() => false,
+              PopupWindowController() => false,
+              SatelliteWindowController() => false,
+            },
+            _WindowControllerAspect.minimizable => switch (controller) {
+              final RegularWindowController regular =>
+                regular.isMinimizable !=
+                    (oldWidget.controller as RegularWindowController).isMinimizable,
+              DialogWindowController() => false,
+              TooltipWindowController() => false,
+              PopupWindowController() => false,
+              SatelliteWindowController() => false,
+            },
+            _WindowControllerAspect.maximizable => switch (controller) {
+              final RegularWindowController regular =>
+                regular.isMaximizable !=
+                    (oldWidget.controller as RegularWindowController).isMaximizable,
+              DialogWindowController() => false,
+              TooltipWindowController() => false,
+              PopupWindowController() => false,
+              SatelliteWindowController() => false,
+            },
+            _WindowControllerAspect.resizable => switch (controller) {
+              final RegularWindowController regular =>
+                regular.isResizable !=
+                    (oldWidget.controller as RegularWindowController).isResizable,
+              final DialogWindowController dialog =>
+                dialog.isResizable != (oldWidget.controller as DialogWindowController).isResizable,
               TooltipWindowController() => false,
               PopupWindowController() => false,
               SatelliteWindowController() => false,

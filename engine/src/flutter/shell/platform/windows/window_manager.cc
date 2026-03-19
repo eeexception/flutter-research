@@ -32,7 +32,8 @@ FlutterViewId WindowManager::CreateRegularWindow(
     const RegularWindowCreationRequest* request) {
   auto window = HostWindow::CreateRegularWindow(
       this, engine_, request->preferred_size, request->preferred_constraints,
-      request->title);
+      request->title, request->titled, request->closable, request->minimizable,
+      request->maximizable, request->resizable);
   if (!window || !window->GetWindowHandle()) {
     FML_LOG(ERROR) << "Failed to create host window";
     return -1;
@@ -46,7 +47,7 @@ FlutterViewId WindowManager::CreateDialogWindow(
     const DialogWindowCreationRequest* request) {
   auto window = HostWindow::CreateDialogWindow(
       this, engine_, request->preferred_size, request->preferred_constraints,
-      request->title, request->parent_or_null);
+      request->title, request->parent_or_null, request->resizable);
   if (!window || !window->GetWindowHandle()) {
     FML_LOG(ERROR) << "Failed to create host window";
     return -1;
@@ -247,4 +248,66 @@ void InternalFlutterWindows_WindowManager_UpdateTooltipPosition(HWND hwnd) {
   flutter::HostWindowTooltip* tooltip_window =
       reinterpret_cast<flutter::HostWindowTooltip*>(window);
   tooltip_window->UpdatePosition();
+}
+
+namespace {
+
+void SetWindowStyleFlag(HWND hwnd, LONG flag, bool set) {
+  LONG style = GetWindowLong(hwnd, GWL_STYLE);
+  if (set) {
+    style |= flag;
+  } else {
+    style &= ~flag;
+  }
+  SetWindowLong(hwnd, GWL_STYLE, style);
+  SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+}
+
+bool GetWindowStyleFlag(HWND hwnd, LONG flag) {
+  return (GetWindowLong(hwnd, GWL_STYLE) & flag) != 0;
+}
+
+}  // namespace
+
+void InternalFlutterWindows_Window_SetTitled(HWND hwnd, bool titled) {
+  SetWindowStyleFlag(hwnd, WS_CAPTION, titled);
+}
+
+bool InternalFlutterWindows_Window_IsTitled(HWND hwnd) {
+  return GetWindowStyleFlag(hwnd, WS_CAPTION);
+}
+
+void InternalFlutterWindows_Window_SetClosable(HWND hwnd, bool closable) {
+  SetWindowStyleFlag(hwnd, WS_SYSMENU, closable);
+}
+
+bool InternalFlutterWindows_Window_IsClosable(HWND hwnd) {
+  return GetWindowStyleFlag(hwnd, WS_SYSMENU);
+}
+
+void InternalFlutterWindows_Window_SetMinimizable(HWND hwnd,
+                                                   bool minimizable) {
+  SetWindowStyleFlag(hwnd, WS_MINIMIZEBOX, minimizable);
+}
+
+bool InternalFlutterWindows_Window_IsMinimizable(HWND hwnd) {
+  return GetWindowStyleFlag(hwnd, WS_MINIMIZEBOX);
+}
+
+void InternalFlutterWindows_Window_SetMaximizable(HWND hwnd,
+                                                   bool maximizable) {
+  SetWindowStyleFlag(hwnd, WS_MAXIMIZEBOX, maximizable);
+}
+
+bool InternalFlutterWindows_Window_IsMaximizable(HWND hwnd) {
+  return GetWindowStyleFlag(hwnd, WS_MAXIMIZEBOX);
+}
+
+void InternalFlutterWindows_Window_SetResizable(HWND hwnd, bool resizable) {
+  SetWindowStyleFlag(hwnd, WS_THICKFRAME, resizable);
+}
+
+bool InternalFlutterWindows_Window_IsResizable(HWND hwnd) {
+  return GetWindowStyleFlag(hwnd, WS_THICKFRAME);
 }

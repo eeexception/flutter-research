@@ -144,6 +144,11 @@ class WindowingOwnerWin32 extends WindowingOwner {
     BoxConstraints? preferredConstraints,
     String? title,
     required RegularWindowControllerDelegate delegate,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) {
     return RegularWindowControllerWin32(
       owner: this,
@@ -151,6 +156,11 @@ class WindowingOwnerWin32 extends WindowingOwner {
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
       title: title,
+      titled: titled,
+      closable: closable,
+      minimizable: minimizable,
+      maximizable: maximizable,
+      resizable: resizable,
     );
   }
 
@@ -162,6 +172,7 @@ class WindowingOwnerWin32 extends WindowingOwner {
     BoxConstraints? preferredConstraints,
     BaseWindowController? parent,
     String? title,
+    bool resizable = true,
   }) {
     return DialogWindowControllerWin32(
       owner: this,
@@ -170,6 +181,7 @@ class WindowingOwnerWin32 extends WindowingOwner {
       preferredConstraints: preferredConstraints,
       title: title,
       parent: parent,
+      resizable: resizable,
     );
   }
 
@@ -315,6 +327,11 @@ class RegularWindowControllerWin32 extends RegularWindowController {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
   }) : _owner = owner,
        _delegate = delegate,
        super.empty() {
@@ -330,6 +347,11 @@ class RegularWindowControllerWin32 extends RegularWindowController {
       preferredSize,
       preferredConstraints,
       title,
+      titled: titled,
+      closable: closable,
+      minimizable: minimizable,
+      maximizable: maximizable,
+      resizable: resizable,
     );
     if (viewId < 0) {
       throw Exception('Windows failed to create a regular window with a valid view id.');
@@ -388,6 +410,81 @@ class RegularWindowControllerWin32 extends RegularWindowController {
   bool get isFullscreen {
     _ensureNotDestroyed();
     return _Win32PlatformInterface.getFullscreen(getWindowHandle());
+  }
+
+  @override
+  @internal
+  bool get isTitled {
+    _ensureNotDestroyed();
+    return _Win32PlatformInterface.isTitled(getWindowHandle());
+  }
+
+  @override
+  @internal
+  void setTitled(bool titled) {
+    _ensureNotDestroyed();
+    _Win32PlatformInterface.setTitled(getWindowHandle(), titled);
+    notifyListeners();
+  }
+
+  @override
+  @internal
+  bool get isClosable {
+    _ensureNotDestroyed();
+    return _Win32PlatformInterface.isClosable(getWindowHandle());
+  }
+
+  @override
+  @internal
+  void setClosable(bool closable) {
+    _ensureNotDestroyed();
+    _Win32PlatformInterface.setClosable(getWindowHandle(), closable);
+    notifyListeners();
+  }
+
+  @override
+  @internal
+  bool get isMinimizable {
+    _ensureNotDestroyed();
+    return _Win32PlatformInterface.isMinimizable(getWindowHandle());
+  }
+
+  @override
+  @internal
+  void setMinimizable(bool minimizable) {
+    _ensureNotDestroyed();
+    _Win32PlatformInterface.setMinimizable(getWindowHandle(), minimizable);
+    notifyListeners();
+  }
+
+  @override
+  @internal
+  bool get isMaximizable {
+    _ensureNotDestroyed();
+    return _Win32PlatformInterface.isMaximizable(getWindowHandle());
+  }
+
+  @override
+  @internal
+  void setMaximizable(bool maximizable) {
+    _ensureNotDestroyed();
+    _Win32PlatformInterface.setMaximizable(getWindowHandle(), maximizable);
+    notifyListeners();
+  }
+
+  @override
+  @internal
+  bool get isResizable {
+    _ensureNotDestroyed();
+    return _Win32PlatformInterface.isResizable(getWindowHandle());
+  }
+
+  @override
+  @internal
+  void setResizable(bool resizable) {
+    _ensureNotDestroyed();
+    _Win32PlatformInterface.setResizable(getWindowHandle(), resizable);
+    notifyListeners();
   }
 
   @override
@@ -547,6 +644,7 @@ class DialogWindowControllerWin32 extends DialogWindowController {
     BoxConstraints? preferredConstraints,
     String? title,
     BaseWindowController? parent,
+    bool resizable = true,
   }) : _owner = owner,
        _delegate = delegate,
        _parent = parent,
@@ -569,6 +667,7 @@ class DialogWindowControllerWin32 extends DialogWindowController {
               parent.rootView.viewId,
             )
           : null,
+      resizable: resizable,
     );
     if (viewId < 0) {
       throw Exception('Windows failed to create a dialog window with a valid view id.');
@@ -614,6 +713,21 @@ class DialogWindowControllerWin32 extends DialogWindowController {
   bool get isMinimized {
     _ensureNotDestroyed();
     return _Win32PlatformInterface.isIconic(getWindowHandle()) != 0;
+  }
+
+  @override
+  @internal
+  bool get isResizable {
+    _ensureNotDestroyed();
+    return _Win32PlatformInterface.isResizable(getWindowHandle());
+  }
+
+  @override
+  @internal
+  void setResizable(bool resizable) {
+    _ensureNotDestroyed();
+    _Win32PlatformInterface.setResizable(getWindowHandle(), resizable);
+    notifyListeners();
   }
 
   @override
@@ -983,14 +1097,24 @@ class _Win32PlatformInterface {
     int engineId,
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
-    String? title,
-  ) {
+    String? title, {
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
+  }) {
     final ffi.Pointer<_RegularWindowCreationRequest> request =
         allocator<_RegularWindowCreationRequest>();
     try {
       request.ref.preferredSize.from(preferredSize);
       request.ref.preferredConstraints.from(preferredConstraints);
       request.ref.title = (title ?? 'Regular window').toNativeUtf16(allocator: allocator);
+      request.ref.titled = titled;
+      request.ref.closable = closable;
+      request.ref.minimizable = minimizable;
+      request.ref.maximizable = maximizable;
+      request.ref.resizable = resizable;
       return _createRegularWindow(engineId, request);
     } finally {
       allocator.free(request);
@@ -1011,8 +1135,9 @@ class _Win32PlatformInterface {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
-    HWND? parent,
-  ) {
+    HWND? parent, {
+    bool resizable = true,
+  }) {
     final ffi.Pointer<_DialogWindowCreationRequest> request =
         allocator<_DialogWindowCreationRequest>();
     try {
@@ -1020,6 +1145,7 @@ class _Win32PlatformInterface {
       request.ref.preferredConstraints.from(preferredConstraints);
       request.ref.title = (title ?? 'Dialog window').toNativeUtf16(allocator: allocator);
       request.ref.parentOrNull = parent ?? ffi.Pointer<ffi.Void>.fromAddress(0);
+      request.ref.resizable = resizable;
       return _createDialogWindow(engineId, request);
     } finally {
       allocator.free(request);
@@ -1209,6 +1335,56 @@ class _Win32PlatformInterface {
     symbol: 'InternalFlutterWindows_WindowManager_UpdateTooltipPosition',
   )
   external static void updateTooltipWindowPosition(HWND windowHandle);
+
+  @ffi.Native<ffi.Void Function(HWND, ffi.Bool)>(
+    symbol: 'InternalFlutterWindows_Window_SetTitled',
+  )
+  external static void setTitled(HWND windowHandle, bool titled);
+
+  @ffi.Native<ffi.Bool Function(HWND)>(
+    symbol: 'InternalFlutterWindows_Window_IsTitled',
+  )
+  external static bool isTitled(HWND windowHandle);
+
+  @ffi.Native<ffi.Void Function(HWND, ffi.Bool)>(
+    symbol: 'InternalFlutterWindows_Window_SetClosable',
+  )
+  external static void setClosable(HWND windowHandle, bool closable);
+
+  @ffi.Native<ffi.Bool Function(HWND)>(
+    symbol: 'InternalFlutterWindows_Window_IsClosable',
+  )
+  external static bool isClosable(HWND windowHandle);
+
+  @ffi.Native<ffi.Void Function(HWND, ffi.Bool)>(
+    symbol: 'InternalFlutterWindows_Window_SetMinimizable',
+  )
+  external static void setMinimizable(HWND windowHandle, bool minimizable);
+
+  @ffi.Native<ffi.Bool Function(HWND)>(
+    symbol: 'InternalFlutterWindows_Window_IsMinimizable',
+  )
+  external static bool isMinimizable(HWND windowHandle);
+
+  @ffi.Native<ffi.Void Function(HWND, ffi.Bool)>(
+    symbol: 'InternalFlutterWindows_Window_SetMaximizable',
+  )
+  external static void setMaximizable(HWND windowHandle, bool maximizable);
+
+  @ffi.Native<ffi.Bool Function(HWND)>(
+    symbol: 'InternalFlutterWindows_Window_IsMaximizable',
+  )
+  external static bool isMaximizable(HWND windowHandle);
+
+  @ffi.Native<ffi.Void Function(HWND, ffi.Bool)>(
+    symbol: 'InternalFlutterWindows_Window_SetResizable',
+  )
+  external static void setResizable(HWND windowHandle, bool resizable);
+
+  @ffi.Native<ffi.Bool Function(HWND)>(
+    symbol: 'InternalFlutterWindows_Window_IsResizable',
+  )
+  external static bool isResizable(HWND windowHandle);
 }
 
 /// Payload for the creation method used by [_Win32PlatformInterface.createRegularWindow].
@@ -1216,6 +1392,16 @@ final class _RegularWindowCreationRequest extends ffi.Struct {
   external _WindowSizeRequest preferredSize;
   external _WindowConstraintsRequest preferredConstraints;
   external ffi.Pointer<_Utf16> title;
+  @ffi.Bool()
+  external bool titled;
+  @ffi.Bool()
+  external bool closable;
+  @ffi.Bool()
+  external bool minimizable;
+  @ffi.Bool()
+  external bool maximizable;
+  @ffi.Bool()
+  external bool resizable;
 }
 
 /// Payload for the creation method used by [_Win32PlatformInterface.createDialogWindow].
@@ -1224,6 +1410,8 @@ final class _DialogWindowCreationRequest extends ffi.Struct {
   external _WindowConstraintsRequest preferredConstraints;
   external ffi.Pointer<_Utf16> title;
   external HWND parentOrNull;
+  @ffi.Bool()
+  external bool resizable;
 }
 
 final class _TooltipWindowCreationRequest extends ffi.Struct {
