@@ -166,3 +166,4 @@ app.*.symbols
 
 .claude/
 claude-dev
+.claude_dev_active
