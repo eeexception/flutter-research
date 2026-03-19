@@ -229,6 +229,49 @@ class _WindowCreatorCard extends StatelessWidget {
                       child: const Text('Regular'),
                     ),
                     const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: () {
+                        final UniqueKey key = UniqueKey();
+                        windowManager.add(
+                          KeyedWindow(
+                            key: key,
+                            controller: RegularWindowController(
+                              delegate: CallbackRegularWindowControllerDelegate(
+                                onDestroyed: () => windowManager.remove(key),
+                              ),
+                              title: 'Borderless',
+                              preferredSize: windowSettings.regularSize,
+                              titled: false,
+                              closable: false,
+                              minimizable: false,
+                              maximizable: false,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Borderless Window'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: () {
+                        final UniqueKey key = UniqueKey();
+                        windowManager.add(
+                          KeyedWindow(
+                            key: key,
+                            controller: RegularWindowController(
+                              delegate: CallbackRegularWindowControllerDelegate(
+                                onDestroyed: () => windowManager.remove(key),
+                              ),
+                              title: 'Non-resizable',
+                              preferredSize: windowSettings.regularSize,
+                              resizable: false,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Non-resizable Window'),
+                    ),
+                    const SizedBox(height: 8),
                     TooltipButton(parentController: windowController),
                     const SizedBox(height: 8),
                     OutlinedButton(
@@ -268,6 +311,26 @@ class _WindowCreatorCard extends StatelessWidget {
                         );
                       },
                       child: const Text('Modal Dialog'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: () {
+                        final UniqueKey key = UniqueKey();
+                        windowManager.add(
+                          KeyedWindow(
+                            key: key,
+                            controller: DialogWindowController(
+                              delegate: CallbackDialogWindowControllerDelegate(
+                                onDestroyed: () => windowManager.remove(key),
+                              ),
+                              title: 'Fixed-size Dialog',
+                              preferredSize: windowSettings.dialogSize,
+                              resizable: false,
+                            ),
+                          ),
+                        );
+                      },
+                      child: const Text('Non-resizable Dialog'),
                     ),
                     const SizedBox(height: 8),
                     Container(

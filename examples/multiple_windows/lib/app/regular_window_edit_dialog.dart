@@ -40,6 +40,11 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
   late bool initialFullscreen;
   late bool initialMaximized;
   late bool initialMinimized;
+  late bool initialTitled;
+  late bool initialClosable;
+  late bool initialMinimizable;
+  late bool initialMaximizable;
+  late bool initialResizable;
 
   late final TextEditingController widthController;
   late final TextEditingController heightController;
@@ -48,6 +53,11 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
   bool? nextIsFullscreen;
   bool? nextIsMaximized;
   bool? nextIsMinimized;
+  bool? nextIsTitled;
+  bool? nextIsClosable;
+  bool? nextIsMinimizable;
+  bool? nextIsMaximizable;
+  bool? nextIsResizable;
 
   void _init() {
     widget.controller.addListener(_onNotification);
@@ -56,6 +66,11 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
     initialFullscreen = widget.controller.isFullscreen;
     initialMaximized = widget.controller.isMaximized;
     initialMinimized = widget.controller.isMinimized;
+    initialTitled = widget.controller.isTitled;
+    initialClosable = widget.controller.isClosable;
+    initialMinimizable = widget.controller.isMinimizable;
+    initialMaximizable = widget.controller.isMaximizable;
+    initialResizable = widget.controller.isResizable;
 
     widthController = TextEditingController(text: initialSize.width.toString());
     heightController = TextEditingController(
@@ -65,6 +80,11 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
     nextIsFullscreen = null;
     nextIsMaximized = null;
     nextIsMinimized = null;
+    nextIsTitled = null;
+    nextIsClosable = null;
+    nextIsMinimizable = null;
+    nextIsMaximizable = null;
+    nextIsResizable = null;
   }
 
   @override
@@ -109,6 +129,36 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
         nextIsMinimized = null;
       });
     }
+    if (widget.controller.isTitled != initialTitled) {
+      setState(() {
+        initialTitled = widget.controller.isTitled;
+        nextIsTitled = null;
+      });
+    }
+    if (widget.controller.isClosable != initialClosable) {
+      setState(() {
+        initialClosable = widget.controller.isClosable;
+        nextIsClosable = null;
+      });
+    }
+    if (widget.controller.isMinimizable != initialMinimizable) {
+      setState(() {
+        initialMinimizable = widget.controller.isMinimizable;
+        nextIsMinimizable = null;
+      });
+    }
+    if (widget.controller.isMaximizable != initialMaximizable) {
+      setState(() {
+        initialMaximizable = widget.controller.isMaximizable;
+        nextIsMaximizable = null;
+      });
+    }
+    if (widget.controller.isResizable != initialResizable) {
+      setState(() {
+        initialResizable = widget.controller.isResizable;
+        nextIsResizable = null;
+      });
+    }
   }
 
   @override
@@ -140,6 +190,21 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
     }
     if (nextIsMinimized != null && nextIsMinimized != initialMinimized) {
       widget.controller.setMinimized(nextIsMinimized!);
+    }
+    if (nextIsTitled != null && nextIsTitled != initialTitled) {
+      widget.controller.setTitled(nextIsTitled!);
+    }
+    if (nextIsClosable != null && nextIsClosable != initialClosable) {
+      widget.controller.setClosable(nextIsClosable!);
+    }
+    if (nextIsMinimizable != null && nextIsMinimizable != initialMinimizable) {
+      widget.controller.setMinimizable(nextIsMinimizable!);
+    }
+    if (nextIsMaximizable != null && nextIsMaximizable != initialMaximizable) {
+      widget.controller.setMaximizable(nextIsMaximizable!);
+    }
+    if (nextIsResizable != null && nextIsResizable != initialResizable) {
+      widget.controller.setResizable(nextIsResizable!);
     }
 
     widget.onClose();
@@ -190,6 +255,57 @@ class _RegularWindowEditDialogState extends State<_RegularWindowEditDialog> {
             onChanged: (bool? value) {
               if (value != null) {
                 setState(() => nextIsMinimized = value);
+              }
+            },
+          ),
+          const Divider(),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
+            child: Text('Decoration Style Flags',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          CheckboxListTile(
+            title: const Text('Titled'),
+            value: nextIsTitled ?? initialTitled,
+            onChanged: (bool? value) {
+              if (value != null) {
+                setState(() => nextIsTitled = value);
+              }
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Closable'),
+            value: nextIsClosable ?? initialClosable,
+            onChanged: (bool? value) {
+              if (value != null) {
+                setState(() => nextIsClosable = value);
+              }
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Minimizable'),
+            value: nextIsMinimizable ?? initialMinimizable,
+            onChanged: (bool? value) {
+              if (value != null) {
+                setState(() => nextIsMinimizable = value);
+              }
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Maximizable'),
+            value: nextIsMaximizable ?? initialMaximizable,
+            onChanged: (bool? value) {
+              if (value != null) {
+                setState(() => nextIsMaximizable = value);
+              }
+            },
+          ),
+          CheckboxListTile(
+            title: const Text('Resizable'),
+            value: nextIsResizable ?? initialResizable,
+            onChanged: (bool? value) {
+              if (value != null) {
+                setState(() => nextIsResizable = value);
               }
             },
           ),
