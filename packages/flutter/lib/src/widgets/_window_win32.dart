@@ -143,7 +143,24 @@ class WindowingOwnerWin32 extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
-    WindowDecorations decorations = WindowDecorations.all,
+    required RegularWindowControllerDelegate delegate,
+  }) {
+    return RegularWindowControllerWin32(
+      owner: this,
+      delegate: delegate,
+      preferredSize: preferredSize,
+      preferredConstraints: preferredConstraints,
+      title: title,
+    );
+  }
+
+  @internal
+  @override
+  RegularWindowController createDecoratedRegularWindowController({
+    Size? preferredSize,
+    BoxConstraints? preferredConstraints,
+    String? title,
+    required WindowDecorations decorations,
     required RegularWindowControllerDelegate delegate,
   }) {
     return RegularWindowControllerWin32(
@@ -320,6 +337,7 @@ class RegularWindowControllerWin32 extends RegularWindowController {
     WindowDecorations decorations = WindowDecorations.all,
   }) : _owner = owner,
        _delegate = delegate,
+       _decorations = decorations,
        super.empty() {
     if (!isWindowingEnabled) {
       throw UnsupportedError(_kWindowingDisabledErrorMessage);
@@ -348,7 +366,24 @@ class RegularWindowControllerWin32 extends RegularWindowController {
   final WindowingOwnerWin32 _owner;
   final RegularWindowControllerDelegate _delegate;
   late final _RegularWindowMesageHandler _handler;
+  WindowDecorations _decorations;
   bool _destroyed = false;
+
+  @override
+  @internal
+  WindowDecorations get decorations {
+    _ensureNotDestroyed();
+    return _decorations;
+  }
+
+  @override
+  @internal
+  void setDecorations(WindowDecorations decorations) {
+    _ensureNotDestroyed();
+    _Win32PlatformInterface.setWindowDecorations(_owner.allocator, getWindowHandle(), decorations);
+    _decorations = decorations;
+    notifyListeners();
+  }
 
   @override
   @internal
@@ -1143,6 +1178,28 @@ class _Win32PlatformInterface {
   external static void _setWindowConstraints(
     HWND windowHandle,
     ffi.Pointer<_WindowConstraintsRequest> constraints,
+  );
+
+  static void setWindowDecorations(
+    ffi.Allocator allocator,
+    HWND windowHandle,
+    WindowDecorations decorations,
+  ) {
+    final ffi.Pointer<_WindowDecorationsRequest> request = allocator<_WindowDecorationsRequest>();
+    try {
+      request.ref.from(decorations);
+      _setWindowDecorations(windowHandle, request);
+    } finally {
+      allocator.free(request);
+    }
+  }
+
+  @ffi.Native<ffi.Void Function(HWND, ffi.Pointer<_WindowDecorationsRequest>)>(
+    symbol: 'InternalFlutterWindows_WindowManager_SetWindowDecorations',
+  )
+  external static void _setWindowDecorations(
+    HWND windowHandle,
+    ffi.Pointer<_WindowDecorationsRequest> decorations,
   );
 
   @ffi.Native<ffi.Void Function(HWND, ffi.Int32)>(symbol: 'ShowWindow')

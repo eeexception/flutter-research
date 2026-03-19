@@ -227,6 +227,39 @@ final class WindowDecorations {
     hasShadow: false,
   );
 
+  /// Creates a copy of this [WindowDecorations] where the given fields
+  /// replace the corresponding fields in this object.
+  ///
+  /// {@tool snippet}
+  /// Disable just the title bar while keeping everything else:
+  ///
+  /// ```dart
+  /// WindowDecorations.all.copyWith(hasTitleBar: false)
+  /// ```
+  /// {@end-tool}
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  WindowDecorations copyWith({
+    bool? hasTitleBar,
+    bool? hasBorder,
+    bool? hasCloseButton,
+    bool? hasMinimizeButton,
+    bool? hasMaximizeButton,
+    bool? isResizable,
+    bool? hasShadow,
+  }) {
+    return WindowDecorations(
+      hasTitleBar: hasTitleBar ?? this.hasTitleBar,
+      hasBorder: hasBorder ?? this.hasBorder,
+      hasCloseButton: hasCloseButton ?? this.hasCloseButton,
+      hasMinimizeButton: hasMinimizeButton ?? this.hasMinimizeButton,
+      hasMaximizeButton: hasMaximizeButton ?? this.hasMaximizeButton,
+      isResizable: isResizable ?? this.isResizable,
+      hasShadow: hasShadow ?? this.hasShadow,
+    );
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) {
@@ -412,7 +445,7 @@ abstract class RegularWindowController extends BaseWindowController {
     }
 
     final WindowingOwner owner = WidgetsBinding.instance.windowingOwner;
-    return owner.createRegularWindowController(
+    return owner.createDecoratedRegularWindowController(
       delegate: delegate ?? RegularWindowControllerDelegate(),
       preferredSize: preferredSize,
       preferredConstraints: preferredConstraints,
@@ -469,6 +502,34 @@ abstract class RegularWindowController extends BaseWindowController {
   /// {@macro flutter.widgets.windowing.experimental}
   @internal
   bool get isFullscreen;
+
+  /// The system-drawn decorations currently requested for this window.
+  ///
+  /// Reflects the value most recently passed at construction time or via
+  /// [setDecorations]. The platform may approximate the requested appearance
+  /// rather than honoring every flag independently.
+  ///
+  /// Defaults to [WindowDecorations.all] when the controller was created
+  /// without specifying decorations.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  WindowDecorations get decorations => WindowDecorations.all;
+
+  /// Requests that the system-drawn decorations for this window be changed
+  /// to [decorations].
+  ///
+  /// The platform may not honor every flag independently and is free to
+  /// approximate the requested appearance. On some platforms changing
+  /// decorations on a visible window may cause the window to briefly flicker
+  /// or to be repositioned so that its content remains in the same place.
+  ///
+  /// The default implementation does nothing. Platform-specific controllers
+  /// override this to apply the change to the native window.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  void setDecorations(WindowDecorations decorations) {}
 
   /// Request change to the content size of the window.
   ///
@@ -1326,8 +1387,33 @@ abstract class WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
-    WindowDecorations decorations = WindowDecorations.all,
   });
+
+  /// Creates a [RegularWindowController] with the provided properties and
+  /// [decorations].
+  ///
+  /// The default implementation ignores [decorations] and delegates to
+  /// [createRegularWindowController]. Platform-specific owners override this
+  /// to pass the decorations through to the native window. Existing
+  /// [WindowingOwner] subclasses that do not yet support decorations continue
+  /// to compile and create fully decorated windows.
+  ///
+  /// {@macro flutter.widgets.windowing.experimental}
+  @internal
+  RegularWindowController createDecoratedRegularWindowController({
+    required RegularWindowControllerDelegate delegate,
+    Size? preferredSize,
+    BoxConstraints? preferredConstraints,
+    String? title,
+    required WindowDecorations decorations,
+  }) {
+    return createRegularWindowController(
+      delegate: delegate,
+      preferredSize: preferredSize,
+      preferredConstraints: preferredConstraints,
+      title: title,
+    );
+  }
 
   /// Creates a [DialogWindowController] with the provided properties.
   ///
@@ -1426,7 +1512,6 @@ class _WindowingOwnerUnsupported extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
-    WindowDecorations decorations = WindowDecorations.all,
   }) {
     throw UnsupportedError(errorMessage);
   }

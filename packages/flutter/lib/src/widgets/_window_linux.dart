@@ -90,7 +90,26 @@ class WindowingOwnerLinux extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
-    WindowDecorations decorations = WindowDecorations.all,
+    required RegularWindowControllerDelegate delegate,
+  }) {
+    final controller = RegularWindowControllerLinux(
+      owner: this,
+      delegate: delegate,
+      preferredSize: preferredSize,
+      preferredConstraints: preferredConstraints,
+      title: title,
+    );
+    _windows[controller.rootView.viewId] = controller._window;
+    return controller;
+  }
+
+  @internal
+  @override
+  RegularWindowController createDecoratedRegularWindowController({
+    Size? preferredSize,
+    BoxConstraints? preferredConstraints,
+    String? title,
+    required WindowDecorations decorations,
     required RegularWindowControllerDelegate delegate,
   }) {
     final controller = RegularWindowControllerLinux(
@@ -194,6 +213,7 @@ class RegularWindowControllerLinux extends RegularWindowController {
     WindowDecorations decorations = WindowDecorations.all,
   }) : _owner = owner,
        _delegate = delegate,
+       _decorations = decorations,
        _window = _GtkWindow(_GtkWindowType.toplevel),
        super.empty() {
     if (!isWindowingEnabled) {
@@ -220,26 +240,7 @@ class RegularWindowControllerLinux extends RegularWindowController {
     if (title != null) {
       setTitle(title);
     }
-    // GTK cannot control the title bar, border, and window buttons
-    // independently of one another; together they are the window manager's
-    // server-side decoration. If any of these are disabled, ask GTK to
-    // remove the entire decoration. Resizability is controlled separately,
-    // and the close button has its own hint. Shadow is determined by the
-    // window manager and cannot be controlled from here.
-    final bool wantsDecoration =
-        decorations.hasTitleBar &&
-        decorations.hasBorder &&
-        decorations.hasMinimizeButton &&
-        decorations.hasMaximizeButton;
-    if (!wantsDecoration) {
-      _window.setDecorated(false);
-    }
-    if (!decorations.isResizable) {
-      _window.setResizable(false);
-    }
-    if (!decorations.hasCloseButton) {
-      _window.setDeletable(false);
-    }
+    _applyDecorations(decorations);
     final engine = _FlEngine.current();
     final view = _FlView(engine);
     final int viewId = view.getId();
@@ -255,7 +256,47 @@ class RegularWindowControllerLinux extends RegularWindowController {
   final RegularWindowControllerDelegate _delegate;
   final _GtkWindow _window;
   late final _FlWindowMonitor _windowMonitor;
+  WindowDecorations _decorations;
   bool _destroyed = false;
+
+  @override
+  @internal
+  WindowDecorations get decorations {
+    _ensureNotDestroyed();
+    return _decorations;
+  }
+
+  @override
+  @internal
+  void setDecorations(WindowDecorations decorations) {
+    _ensureNotDestroyed();
+    _applyDecorations(decorations);
+    _decorations = decorations;
+    notifyListeners();
+  }
+
+  // GTK cannot control the title bar, border, and window buttons
+  // independently of one another; together they are the window manager's
+  // server-side decoration. If any of these are disabled, ask GTK to
+  // remove the entire decoration. Resizability is controlled separately,
+  // and the close button has its own hint. Shadow is determined by the
+  // window manager and cannot be controlled from here.
+  void _applyDecorations(WindowDecorations decorations) {
+    final bool wantsDecoration =
+        decorations.hasTitleBar &&
+        decorations.hasBorder &&
+        decorations.hasMinimizeButton &&
+        decorations.hasMaximizeButton;
+    _window.setDecorated(wantsDecoration);
+    _window.setResizable(decorations.isResizable);
+    _window.setDeletable(decorations.hasCloseButton);
+  }
+
+  void _ensureNotDestroyed() {
+    if (_destroyed) {
+      throw StateError('Window has been destroyed.');
+    }
+  }
 
   @override
   @internal

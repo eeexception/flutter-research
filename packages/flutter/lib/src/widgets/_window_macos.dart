@@ -80,7 +80,24 @@ class WindowingOwnerMacOS extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
-    WindowDecorations decorations = WindowDecorations.all,
+  }) {
+    final res = RegularWindowControllerMacOS(
+      owner: this,
+      delegate: delegate,
+      preferredSize: preferredSize,
+      title: title,
+    );
+    _activeControllers.add(res);
+    return res;
+  }
+
+  @override
+  RegularWindowController createDecoratedRegularWindowController({
+    required RegularWindowControllerDelegate delegate,
+    Size? preferredSize,
+    BoxConstraints? preferredConstraints,
+    String? title,
+    required WindowDecorations decorations,
   }) {
     final res = RegularWindowControllerMacOS(
       owner: this,
@@ -380,6 +397,7 @@ class RegularWindowControllerMacOS extends RegularWindowController with _WindowC
     String? title,
     WindowDecorations decorations = WindowDecorations.all,
   }) : _delegate = delegate,
+       _decorations = decorations,
        super.empty() {
     _initController(owner);
 
@@ -490,6 +508,23 @@ class RegularWindowControllerMacOS extends RegularWindowController with _WindowC
   }
 
   final RegularWindowControllerDelegate _delegate;
+  WindowDecorations _decorations;
+
+  @override
+  @internal
+  WindowDecorations get decorations {
+    _ensureNotDestroyed();
+    return _decorations;
+  }
+
+  @override
+  @internal
+  void setDecorations(WindowDecorations decorations) {
+    _ensureNotDestroyed();
+    _MacOSPlatformInterface.setWindowDecorations(getWindowHandle(), decorations);
+    _decorations = decorations;
+    notifyListeners();
+  }
 
   @override
   bool get isActivated => _MacOSPlatformInterface.isActivated(getWindowHandle());
@@ -966,6 +1001,21 @@ class _MacOSPlatformInterface {
 
   @Native<Void Function(Pointer<Void>)>(symbol: 'InternalFlutter_Window_UpdatePosition')
   external static void updateWindowPosition(Pointer<Void> windowHandle);
+
+  @Native<Void Function(Pointer<Void>, Pointer<_WindowDecorations>)>(
+    symbol: 'InternalFlutter_Window_SetDecorations',
+  )
+  external static void _setWindowDecorations(
+    Pointer<Void> windowHandle,
+    Pointer<_WindowDecorations> decorations,
+  );
+
+  static void setWindowDecorations(Pointer<Void> windowHandle, WindowDecorations decorations) {
+    final Pointer<_WindowDecorations> ffiDecorations = _allocator<_WindowDecorations>();
+    ffiDecorations.ref.from(decorations);
+    _setWindowDecorations(windowHandle, ffiDecorations);
+    _allocator.free(ffiDecorations);
+  }
 }
 
 // FFI utilities.

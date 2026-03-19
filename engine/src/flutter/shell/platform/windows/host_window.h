@@ -45,6 +45,14 @@ class HostWindow {
       FlutterWindowsEngine* engine,
       const WindowSizeRequest& preferred_size,
       const WindowConstraints& preferred_constraints,
+      LPCWSTR title);
+
+  // Overload that applies |decorations| to the newly created regular window.
+  static std::unique_ptr<HostWindow> CreateRegularWindow(
+      WindowManager* window_manager,
+      FlutterWindowsEngine* engine,
+      const WindowSizeRequest& preferred_size,
+      const WindowConstraints& preferred_constraints,
       LPCWSTR title,
       const WindowDecorationsRequest& decorations);
 
@@ -104,6 +112,12 @@ class HostWindow {
   // Returns |true| if this window is fullscreen, otherwise |false|.
   virtual bool GetFullscreen() const;
 
+  // Changes the system-drawn decorations on this window to match
+  // |decorations|. The default implementation is a no-op; only window
+  // archetypes that support decoration changes (currently regular windows)
+  // override this.
+  virtual void SetDecorations(const WindowDecorationsRequest& decorations) {}
+
   // Given a window identifier, returns the window content size of the
   // window.
   static ActualWindowSize GetWindowContentSize(HWND hwnd);
@@ -128,8 +142,6 @@ class HostWindow {
     int nCmdShow = SW_SHOWNORMAL;
     FlutterWindowsViewSizingDelegate* sizing_delegate = nullptr;
     bool is_sized_to_content = false;
-    // Whether the system should draw a shadow behind the window.
-    bool has_shadow = true;
   };
 
   // Initialize the underlying native window and the Flutter view.

@@ -12,6 +12,14 @@
 
 #include "flutter/shell/platform/common/isolate_scope.h"
 
+// Returns true if |decorations| matches the fully-decorated default.
+static bool IsDefaultDecorations(const FlutterWindowDecorations& decorations) {
+  return decorations.has_title_bar && decorations.has_border &&
+         decorations.has_close_button && decorations.has_minimize_button &&
+         decorations.has_maximize_button && decorations.is_resizable &&
+         decorations.has_shadow;
+}
+
 // A delegate for a Flutter managed window.
 @interface FlutterWindowOwner : NSObject <NSWindowDelegate, FlutterViewSizingDelegate> {
   // Strong reference to the window. This is the only strong reference to the
@@ -72,6 +80,7 @@
 }
 
 - (void)windowDidResignKey:(FlutterWindowOwner*)window;
+- (void)applyDecorations:(const FlutterWindowDecorations&)decorations toWindow:(NSWindow*)window;
 
 @end
 
@@ -375,7 +384,12 @@ static void FlipRect(NSRect& rect, const NSRect& globalScreenFrame) {
   window.styleMask = NSWindowStyleMaskResizable | NSWindowStyleMaskTitled |
                      NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
 
-  [self applyDecorations:request->decorations toWindow:window];
+  // Only apply decoration overrides when they differ from the fully-decorated
+  // default, so that callers that do not specify decorations take the exact
+  // same code path as before this feature was added.
+  if (!IsDefaultDecorations(request->decorations)) {
+    [self applyDecorations:request->decorations toWindow:window];
+  }
 
   if (request->has_size) {
     [window flutterSetContentSize:request->size];
@@ -395,34 +409,34 @@ static void FlipRect(NSRect& rect, const NSRect& globalScreenFrame) {
   return controller.viewIdentifier;
 }
 
-// Applies the requested decoration overrides to |window|. Does nothing when all
-// decoration fields use their default (true) values, preserving existing
-// behavior for callers that do not pass custom decorations.
+// Sets the system-drawn decorations on |window| to match |decorations|.
+// Idempotent: computes and assigns the full style mask and button visibility
+// each call, so it can be used both at creation time and at runtime to change
+// an existing window's decorations.
 - (void)applyDecorations:(const FlutterWindowDecorations&)decorations
                 toWindow:(NSWindow*)window {
-  if (!decorations.has_title_bar) {
-    window.styleMask &= ~NSWindowStyleMaskTitled;
+  NSWindowStyleMask styleMask = 0;
+  if (decorations.has_title_bar) {
+    styleMask |= NSWindowStyleMaskTitled;
   }
-  if (!decorations.has_close_button) {
-    window.styleMask &= ~NSWindowStyleMaskClosable;
+  if (decorations.has_close_button) {
+    styleMask |= NSWindowStyleMaskClosable;
   }
-  if (!decorations.has_minimize_button) {
-    window.styleMask &= ~NSWindowStyleMaskMiniaturizable;
+  if (decorations.has_minimize_button) {
+    styleMask |= NSWindowStyleMaskMiniaturizable;
   }
-  if (!decorations.is_resizable && !decorations.has_maximize_button) {
-    // On macOS, the maximize (zoom) button is tied to the resizable style
-    // mask; only remove it when both resizability and the maximize button
-    // are disabled.
-    window.styleMask &= ~NSWindowStyleMaskResizable;
+  if (decorations.is_resizable || decorations.has_maximize_button) {
+    // On macOS the maximize (zoom) button is tied to the resizable style mask;
+    // there is no separate style for it.
+    styleMask |= NSWindowStyleMaskResizable;
   }
-  if (!decorations.has_maximize_button) {
-    // Hide the zoom button independently of resizability when the maximize
-    // button was explicitly disabled.
-    [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
-  }
-  if (!decorations.has_shadow) {
-    window.hasShadow = NO;
-  }
+
+  // Reset appearance defaults so that a runtime transition from a
+  // borderless-with-transparent-titlebar state back to the default state
+  // restores the expected look.
+  window.titlebarAppearsTransparent = NO;
+  window.titleVisibility = NSWindowTitleVisible;
+
   if (!decorations.has_border && !decorations.has_title_bar) {
     // A fully borderless window.
     window.styleMask = NSWindowStyleMaskBorderless;
@@ -431,20 +445,26 @@ static void FlipRect(NSRect& rect, const NSRect& globalScreenFrame) {
     // border but no title bar, give it a titled window with a transparent title
     // bar and full-size content so the app's content extends to the edges while
     // keeping the frame.
-    window.styleMask |= NSWindowStyleMaskTitled | NSWindowStyleMaskFullSizeContentView;
+    window.styleMask =
+        styleMask | NSWindowStyleMaskTitled | NSWindowStyleMaskFullSizeContentView;
     window.titlebarAppearsTransparent = YES;
     window.titleVisibility = NSWindowTitleHidden;
-    // Hide the standard window buttons unless they were explicitly requested.
-    if (!decorations.has_close_button) {
-      [[window standardWindowButton:NSWindowCloseButton] setHidden:YES];
-    }
-    if (!decorations.has_minimize_button) {
-      [[window standardWindowButton:NSWindowMiniaturizeButton] setHidden:YES];
-    }
-    if (!decorations.has_maximize_button) {
-      [[window standardWindowButton:NSWindowZoomButton] setHidden:YES];
-    }
+  } else if (styleMask == 0) {
+    window.styleMask = NSWindowStyleMaskBorderless;
+  } else {
+    window.styleMask = styleMask;
   }
+
+  window.hasShadow = decorations.has_shadow;
+
+  // The standard window buttons depend on the final style mask, so configure
+  // their visibility after the style mask is set.
+  [[window standardWindowButton:NSWindowCloseButton]
+      setHidden:!decorations.has_close_button];
+  [[window standardWindowButton:NSWindowMiniaturizeButton]
+      setHidden:!decorations.has_minimize_button];
+  [[window standardWindowButton:NSWindowZoomButton]
+      setHidden:!decorations.has_maximize_button];
 }
 
 - (void)destroyWindow:(NSWindow*)window {
@@ -562,6 +582,14 @@ void InternalFlutter_Window_SetConstraints(void* window,
   NSWindow* w = (__bridge NSWindow*)window;
   FlutterWindowOwner* owner = (FlutterWindowOwner*)w.delegate;
   [owner setConstraints:*constraints];
+}
+
+void InternalFlutter_Window_SetDecorations(void* window,
+                                           const FlutterWindowDecorations* decorations) {
+  NSWindow* w = (__bridge NSWindow*)window;
+  FlutterWindowOwner* owner = (FlutterWindowOwner*)w.delegate;
+  FlutterEngine* engine = owner.flutterViewController.engine;
+  [engine.windowController applyDecorations:*decorations toWindow:w];
 }
 
 void InternalFlutter_Window_SetTitle(void* window, const char* title) {

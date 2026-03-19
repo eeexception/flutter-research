@@ -124,6 +124,10 @@ void InternalFlutter_Window_SetConstraints(void* window,
                                            const FlutterWindowConstraints* constraints);
 
 FLUTTER_DARWIN_EXPORT
+void InternalFlutter_Window_SetDecorations(void* window,
+                                           const FlutterWindowDecorations* decorations);
+
+FLUTTER_DARWIN_EXPORT
 void InternalFlutter_Window_SetTitle(void* window, const char* title);
 
 FLUTTER_DARWIN_EXPORT

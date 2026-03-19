@@ -15,14 +15,26 @@ class HostWindowRegular : public HostWindow {
                     FlutterWindowsEngine* engine,
                     const WindowSizeRequest& preferred_size,
                     const BoxConstraints& constraints,
+                    LPCWSTR title);
+
+  // Creates a regular window with the given |decorations|. Delegates to the
+  // regular constructor and then applies the decorations.
+  HostWindowRegular(WindowManager* window_manager,
+                    FlutterWindowsEngine* engine,
+                    const WindowSizeRequest& preferred_size,
+                    const BoxConstraints& constraints,
                     LPCWSTR title,
                     const WindowDecorationsRequest& decorations);
+
+  // Changes the system-drawn decorations on this window to match
+  // |decorations|. Can be called at creation time or at runtime. With
+  // all-default decorations this is a no-op.
+  void SetDecorations(const WindowDecorationsRequest& decorations) override;
 
  private:
   static Rect GetInitialRect(FlutterWindowsEngine* engine,
                              const WindowSizeRequest& preferred_size,
-                             const BoxConstraints& constraints,
-                             DWORD window_style);
+                             const BoxConstraints& constraints);
 
   // Returns the Win32 window style corresponding to the requested
   // decorations.

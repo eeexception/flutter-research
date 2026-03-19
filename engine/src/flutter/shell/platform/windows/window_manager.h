@@ -210,6 +210,11 @@ void InternalFlutterWindows_WindowManager_SetWindowConstraints(
     const flutter::WindowConstraints* constraints);
 
 FLUTTER_EXPORT
+void InternalFlutterWindows_WindowManager_SetWindowDecorations(
+    HWND hwnd,
+    const flutter::WindowDecorationsRequest* decorations);
+
+FLUTTER_EXPORT
 void InternalFlutterWindows_WindowManager_SetFullscreen(
     HWND hwnd,
     const flutter::FullscreenRequest* request);

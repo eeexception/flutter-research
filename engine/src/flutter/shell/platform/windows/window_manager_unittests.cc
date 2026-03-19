@@ -735,5 +735,62 @@ TEST_F(WindowManagerTest, RegularWindowCustomDecorations) {
   EXPECT_FALSE(style & WS_THICKFRAME);
 }
 
+TEST_F(WindowManagerTest, SetWindowDecorationsChangesStyleAtRuntime) {
+  IsolateScope isolate_scope(isolate());
+
+  RegularWindowCreationRequest request{
+      .preferred_size =
+          {
+              .has_preferred_view_size = true,
+              .preferred_view_width = 800,
+              .preferred_view_height = 600,
+          },
+  };
+
+  const int64_t view_id =
+      InternalFlutterWindows_WindowManager_CreateRegularWindow(engine_id(),
+                                                               &request);
+  const HWND window_handle =
+      InternalFlutterWindows_WindowManager_GetTopLevelWindowHandle(engine_id(),
+                                                                   view_id);
+
+  // Created with default decorations — should be WS_OVERLAPPEDWINDOW.
+  const DWORD initial_style = GetWindowLong(window_handle, GWL_STYLE);
+  EXPECT_TRUE(initial_style & WS_CAPTION);
+  EXPECT_TRUE(initial_style & WS_THICKFRAME);
+  EXPECT_TRUE(initial_style & WS_MINIMIZEBOX);
+  EXPECT_TRUE(initial_style & WS_MAXIMIZEBOX);
+
+  // Strip all decorations at runtime.
+  const WindowDecorationsRequest stripped{
+      .has_title_bar = false,
+      .has_border = false,
+      .has_close_button = false,
+      .has_minimize_button = false,
+      .has_maximize_button = false,
+      .is_resizable = false,
+      .has_shadow = false,
+  };
+  InternalFlutterWindows_WindowManager_SetWindowDecorations(window_handle,
+                                                            &stripped);
+
+  const DWORD stripped_style = GetWindowLong(window_handle, GWL_STYLE);
+  EXPECT_FALSE(stripped_style & WS_CAPTION);
+  EXPECT_FALSE(stripped_style & WS_THICKFRAME);
+  EXPECT_FALSE(stripped_style & WS_MINIMIZEBOX);
+  EXPECT_FALSE(stripped_style & WS_MAXIMIZEBOX);
+
+  // Restore decorations at runtime.
+  const WindowDecorationsRequest restored{};
+  InternalFlutterWindows_WindowManager_SetWindowDecorations(window_handle,
+                                                            &restored);
+
+  const DWORD restored_style = GetWindowLong(window_handle, GWL_STYLE);
+  EXPECT_TRUE(restored_style & WS_CAPTION);
+  EXPECT_TRUE(restored_style & WS_THICKFRAME);
+  EXPECT_TRUE(restored_style & WS_MINIMIZEBOX);
+  EXPECT_TRUE(restored_style & WS_MAXIMIZEBOX);
+}
+
 }  // namespace testing
 }  // namespace flutter

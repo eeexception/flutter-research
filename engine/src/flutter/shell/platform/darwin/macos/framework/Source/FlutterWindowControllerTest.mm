@@ -438,4 +438,52 @@ TEST_F(FlutterWindowControllerTest, RegularWindowCustomDecorations) {
   EXPECT_TRUE(window.hasShadow);
   EXPECT_TRUE([window standardWindowButton:NSWindowZoomButton].hidden);
 }
+
+TEST_F(FlutterWindowControllerTest, SetDecorationsChangesStyleAtRuntime) {
+  IsolateScope isolate_scope(isolate());
+  FlutterEngine* engine = GetFlutterEngine();
+  int64_t engineId = reinterpret_cast<int64_t>(engine);
+
+  FlutterWindowCreationRequest request{
+      .has_size = true,
+      .size = {.width = 800, .height = 600},
+      .on_should_close = [] {},
+      .on_will_close = [] {},
+      .notify_listeners = [] {},
+  };
+
+  int64_t viewId = InternalFlutter_WindowController_CreateRegularWindow(engineId, &request);
+  FlutterViewController* viewController = [engine viewControllerForIdentifier:viewId];
+  NSWindow* window = viewController.view.window;
+
+  // Created with default decorations — should have the standard style mask.
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskTitled);
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskResizable);
+  EXPECT_TRUE(window.hasShadow);
+
+  // Strip all decorations at runtime.
+  FlutterWindowDecorations stripped{
+      .has_title_bar = false,
+      .has_border = false,
+      .has_close_button = false,
+      .has_minimize_button = false,
+      .has_maximize_button = false,
+      .is_resizable = false,
+      .has_shadow = false,
+  };
+  InternalFlutter_Window_SetDecorations((__bridge void*)window, &stripped);
+
+  EXPECT_EQ(window.styleMask, NSWindowStyleMaskBorderless);
+  EXPECT_FALSE(window.hasShadow);
+
+  // Restore decorations at runtime.
+  FlutterWindowDecorations restored{};
+  InternalFlutter_Window_SetDecorations((__bridge void*)window, &restored);
+
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskTitled);
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskClosable);
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskMiniaturizable);
+  EXPECT_TRUE(window.styleMask & NSWindowStyleMaskResizable);
+  EXPECT_TRUE(window.hasShadow);
+}
 }  // namespace flutter::testing

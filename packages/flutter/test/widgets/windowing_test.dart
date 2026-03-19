@@ -342,6 +342,27 @@ void main() {
         );
       });
 
+      test('WindowDecorations.copyWith replaces only specified fields', () {
+        expect(
+          WindowDecorations.none.copyWith(hasTitleBar: true),
+          equals(const WindowDecorations(
+            hasBorder: false,
+            hasCloseButton: false,
+            hasMinimizeButton: false,
+            hasMaximizeButton: false,
+            isResizable: false,
+            hasShadow: false,
+          )),
+        );
+        expect(
+          WindowDecorations.all.copyWith(isResizable: false, hasShadow: false),
+          equals(const WindowDecorations(isResizable: false, hasShadow: false)),
+        );
+        // copyWith with no arguments yields an identical value.
+        expect(WindowDecorations.all.copyWith(), equals(WindowDecorations.all));
+        expect(WindowDecorations.none.copyWith(), equals(WindowDecorations.none));
+      });
+
       testWidgets('RegularWindow does not throw', (WidgetTester tester) async {
         final controller = _StubRegularWindowController(tester);
         addTearDown(controller.dispose);

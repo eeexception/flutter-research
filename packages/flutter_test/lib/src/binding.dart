@@ -926,7 +926,6 @@ class _TestWindowingOwner extends WindowingOwner {
     Size? preferredSize,
     BoxConstraints? preferredConstraints,
     String? title,
-    WindowDecorations decorations = WindowDecorations.all,
   }) {
     return _TestRegularWindowController(
       delegate: delegate,
