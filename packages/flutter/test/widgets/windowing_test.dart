@@ -29,7 +29,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'multi_view_testing.dart';
 
 class _StubRegularWindowController extends RegularWindowController {
-  _StubRegularWindowController(WidgetTester tester) : super.empty() {
+  _StubRegularWindowController(
+    WidgetTester tester, {
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
+  }) : _isTitled = titled,
+       _isClosable = closable,
+       _isMinimizable = minimizable,
+       _isMaximizable = maximizable,
+       _isResizable = resizable,
+       super.empty() {
     rootView = FakeView(tester.view);
   }
 
@@ -51,35 +63,50 @@ class _StubRegularWindowController extends RegularWindowController {
   @override
   bool get isFullscreen => false;
 
+  bool _isTitled;
   @override
-  bool get isTitled => true;
+  bool get isTitled => _isTitled;
+  @override
+  void setTitled(bool titled) {
+    _isTitled = titled;
+    notifyListeners();
+  }
 
+  bool _isClosable;
   @override
-  void setTitled(bool titled) {}
+  bool get isClosable => _isClosable;
+  @override
+  void setClosable(bool closable) {
+    _isClosable = closable;
+    notifyListeners();
+  }
 
+  bool _isMinimizable;
   @override
-  bool get isClosable => true;
+  bool get isMinimizable => _isMinimizable;
+  @override
+  void setMinimizable(bool minimizable) {
+    _isMinimizable = minimizable;
+    notifyListeners();
+  }
 
+  bool _isMaximizable;
   @override
-  void setClosable(bool closable) {}
+  bool get isMaximizable => _isMaximizable;
+  @override
+  void setMaximizable(bool maximizable) {
+    _isMaximizable = maximizable;
+    notifyListeners();
+  }
 
+  bool _isResizable;
   @override
-  bool get isMinimizable => true;
-
+  bool get isResizable => _isResizable;
   @override
-  void setMinimizable(bool minimizable) {}
-
-  @override
-  bool get isMaximizable => true;
-
-  @override
-  void setMaximizable(bool maximizable) {}
-
-  @override
-  bool get isResizable => true;
-
-  @override
-  void setResizable(bool resizable) {}
+  void setResizable(bool resizable) {
+    _isResizable = resizable;
+    notifyListeners();
+  }
 
   @override
   void setSize(Size size) {}
@@ -107,7 +134,11 @@ class _StubRegularWindowController extends RegularWindowController {
 }
 
 class _StubDialogWindowController extends DialogWindowController {
-  _StubDialogWindowController(WidgetTester tester) : super.empty() {
+  _StubDialogWindowController(
+    WidgetTester tester, {
+    bool resizable = true,
+  }) : _isResizable = resizable,
+       super.empty() {
     rootView = FakeView(tester.view);
   }
 
@@ -126,11 +157,14 @@ class _StubDialogWindowController extends DialogWindowController {
   @override
   bool get isMinimized => false;
 
+  bool _isResizable;
   @override
-  bool get isResizable => true;
-
+  bool get isResizable => _isResizable;
   @override
-  void setResizable(bool resizable) {}
+  void setResizable(bool resizable) {
+    _isResizable = resizable;
+    notifyListeners();
+  }
 
   @override
   void setSize(Size size) {}
@@ -236,6 +270,82 @@ class _StubSatelliteWindowController extends SatelliteWindowController {
 
   @override
   void destroy() {}
+}
+
+/// A lightweight mutable [RegularWindowController] for pure unit tests
+/// (no widget tree / no [WidgetTester] needed).
+class _MutableRegularWindowController extends RegularWindowController {
+  _MutableRegularWindowController({
+    bool titled = true,
+    bool closable = true,
+    bool minimizable = true,
+    bool maximizable = true,
+    bool resizable = true,
+  }) : _isTitled = titled,
+       _isClosable = closable,
+       _isMinimizable = minimizable,
+       _isMaximizable = maximizable,
+       _isResizable = resizable,
+       super.empty();
+
+  @override Size get contentSize => Size.zero;
+  @override String get title => '';
+  @override bool get isActivated => false;
+  @override bool get isMaximized => false;
+  @override bool get isMinimized => false;
+  @override bool get isFullscreen => false;
+  @override void setSize(Size size) {}
+  @override void setConstraints(BoxConstraints constraints) {}
+  @override void setTitle(String title) {}
+  @override void activate() {}
+  @override void setMaximized(bool maximized) {}
+  @override void setMinimized(bool minimized) {}
+  @override void setFullscreen(bool fullscreen, {Display? display}) {}
+  @override void destroy() {}
+
+  bool _isTitled;
+  @override bool get isTitled => _isTitled;
+  @override void setTitled(bool titled) { _isTitled = titled; notifyListeners(); }
+
+  bool _isClosable;
+  @override bool get isClosable => _isClosable;
+  @override void setClosable(bool closable) { _isClosable = closable; notifyListeners(); }
+
+  bool _isMinimizable;
+  @override bool get isMinimizable => _isMinimizable;
+  @override void setMinimizable(bool minimizable) { _isMinimizable = minimizable; notifyListeners(); }
+
+  bool _isMaximizable;
+  @override bool get isMaximizable => _isMaximizable;
+  @override void setMaximizable(bool maximizable) { _isMaximizable = maximizable; notifyListeners(); }
+
+  bool _isResizable;
+  @override bool get isResizable => _isResizable;
+  @override void setResizable(bool resizable) { _isResizable = resizable; notifyListeners(); }
+}
+
+/// A lightweight mutable [DialogWindowController] for pure unit tests.
+class _MutableDialogWindowController extends DialogWindowController {
+  _MutableDialogWindowController({
+    bool resizable = true,
+  }) : _isResizable = resizable,
+       super.empty();
+
+  @override BaseWindowController? get parent => null;
+  @override Size get contentSize => Size.zero;
+  @override String get title => '';
+  @override bool get isActivated => false;
+  @override bool get isMinimized => false;
+  @override void setSize(Size size) {}
+  @override void setConstraints(BoxConstraints constraints) {}
+  @override void setTitle(String title) {}
+  @override void activate() {}
+  @override void setMinimized(bool minimized) {}
+  @override void destroy() {}
+
+  bool _isResizable;
+  @override bool get isResizable => _isResizable;
+  @override void setResizable(bool resizable) { _isResizable = resizable; notifyListeners(); }
 }
 
 void main() {
@@ -1815,248 +1925,6 @@ void main() {
         expect(isFullscreen, equals(false));
       });
 
-      testWidgets('Can access WindowScope.isTitledOf for regular windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubRegularWindowController(tester);
-        bool? isTitled;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          RegularWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isTitled = WindowScope.isTitledOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isTitled, equals(true));
-      });
-
-      testWidgets('Can access WindowScope.isClosableOf for regular windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubRegularWindowController(tester);
-        bool? isClosable;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          RegularWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isClosable = WindowScope.isClosableOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isClosable, equals(true));
-      });
-
-      testWidgets('Can access WindowScope.isMinimizableOf for regular windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubRegularWindowController(tester);
-        bool? isMinimizable;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          RegularWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isMinimizable = WindowScope.isMinimizableOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isMinimizable, equals(true));
-      });
-
-      testWidgets('Can access WindowScope.isMaximizableOf for regular windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubRegularWindowController(tester);
-        bool? isMaximizable;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          RegularWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isMaximizable = WindowScope.isMaximizableOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isMaximizable, equals(true));
-      });
-
-      testWidgets('Can access WindowScope.isResizableOf for regular windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubRegularWindowController(tester);
-        bool? isResizable;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          RegularWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isResizable = WindowScope.isResizableOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isResizable, equals(true));
-      });
-
-      testWidgets('Can access WindowScope.maybeIsTitledOf for regular windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubRegularWindowController(tester);
-        bool? isTitled;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          RegularWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isTitled = WindowScope.maybeIsTitledOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isTitled, equals(true));
-      });
-
-      testWidgets('Can access WindowScope.maybeIsClosableOf for regular windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubRegularWindowController(tester);
-        bool? isClosable;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          RegularWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isClosable = WindowScope.maybeIsClosableOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isClosable, equals(true));
-      });
-
-      testWidgets('Can access WindowScope.maybeIsMinimizableOf for regular windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubRegularWindowController(tester);
-        bool? isMinimizable;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          RegularWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isMinimizable = WindowScope.maybeIsMinimizableOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isMinimizable, equals(true));
-      });
-
-      testWidgets('Can access WindowScope.maybeIsMaximizableOf for regular windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubRegularWindowController(tester);
-        bool? isMaximizable;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          RegularWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isMaximizable = WindowScope.maybeIsMaximizableOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isMaximizable, equals(true));
-      });
-
-      testWidgets('Can access WindowScope.maybeIsResizableOf for regular windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubRegularWindowController(tester);
-        bool? isResizable;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          RegularWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isResizable = WindowScope.maybeIsResizableOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isResizable, equals(true));
-      });
-
-      testWidgets('Can access WindowScope.isResizableOf for dialog windows', (
-        WidgetTester tester,
-      ) async {
-        final controller = _StubDialogWindowController(tester);
-        bool? isResizable;
-        addTearDown(controller.dispose);
-        await tester.pumpWidget(
-          wrapWithView: false,
-          DialogWindow(
-            controller: controller,
-            child: Builder(
-              builder: (BuildContext context) {
-                isResizable = WindowScope.isResizableOf(context);
-                return const SizedBox.shrink();
-              },
-            ),
-          ),
-        );
-
-        expect(isResizable, equals(true));
-      });
-
       testWidgets('SatelliteWindow does not throw', (WidgetTester tester) async {
         final controller = _StubSatelliteWindowController(tester: tester);
         addTearDown(controller.dispose);
@@ -2064,6 +1932,782 @@ void main() {
           wrapWithView: false,
           SatelliteWindow(controller: controller, child: Container()),
         );
+      });
+
+      // ============================================================
+      // Window decoration style flags — comprehensive tests
+      // ============================================================
+
+      group('Decoration style flags for RegularWindow', () {
+        // --- Default values ---
+
+        testWidgets('all flags default to true', (WidgetTester tester) async {
+          final controller = _StubRegularWindowController(tester);
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            RegularWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.isTitledOf(context);
+                  closable = WindowScope.isClosableOf(context);
+                  minimizable = WindowScope.isMinimizableOf(context);
+                  maximizable = WindowScope.isMaximizableOf(context);
+                  resizable = WindowScope.isResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isTrue);
+          expect(closable, isTrue);
+          expect(minimizable, isTrue);
+          expect(maximizable, isTrue);
+          expect(resizable, isTrue);
+        });
+
+        // --- Non-default initial values ---
+
+        testWidgets('can create window with all flags set to false', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubRegularWindowController(
+            tester,
+            titled: false,
+            closable: false,
+            minimizable: false,
+            maximizable: false,
+            resizable: false,
+          );
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            RegularWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.isTitledOf(context);
+                  closable = WindowScope.isClosableOf(context);
+                  minimizable = WindowScope.isMinimizableOf(context);
+                  maximizable = WindowScope.isMaximizableOf(context);
+                  resizable = WindowScope.isResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isFalse);
+          expect(closable, isFalse);
+          expect(minimizable, isFalse);
+          expect(maximizable, isFalse);
+          expect(resizable, isFalse);
+        });
+
+        testWidgets('can create window with mixed flag values', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubRegularWindowController(
+            tester,
+            titled: true,
+            closable: false,
+            minimizable: true,
+            maximizable: false,
+            resizable: true,
+          );
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            RegularWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.isTitledOf(context);
+                  closable = WindowScope.isClosableOf(context);
+                  minimizable = WindowScope.isMinimizableOf(context);
+                  maximizable = WindowScope.isMaximizableOf(context);
+                  resizable = WindowScope.isResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isTrue);
+          expect(closable, isFalse);
+          expect(minimizable, isTrue);
+          expect(maximizable, isFalse);
+          expect(resizable, isTrue);
+        });
+
+        // --- Runtime mutation updates controller state ---
+
+        test('setTitled updates isTitled getter', () {
+          // Use a minimal test — no widget tree needed for controller state.
+          // We can't use testWidgets here since _Stub needs a tester,
+          // but we can verify the ChangeNotifier behavior directly.
+          final notifications = <void>[];
+          final controller = _MutableRegularWindowController(titled: true);
+          addTearDown(controller.dispose);
+          controller.addListener(() => notifications.add(null));
+
+          expect(controller.isTitled, isTrue);
+
+          controller.setTitled(false);
+          expect(controller.isTitled, isFalse);
+          expect(notifications, hasLength(1));
+
+          controller.setTitled(true);
+          expect(controller.isTitled, isTrue);
+          expect(notifications, hasLength(2));
+        });
+
+        test('setClosable updates isClosable getter and notifies listeners', () {
+          final notifications = <void>[];
+          final controller = _MutableRegularWindowController(closable: true);
+          addTearDown(controller.dispose);
+          controller.addListener(() => notifications.add(null));
+
+          expect(controller.isClosable, isTrue);
+
+          controller.setClosable(false);
+          expect(controller.isClosable, isFalse);
+          expect(notifications, hasLength(1));
+        });
+
+        test('setMinimizable updates isMinimizable getter and notifies listeners', () {
+          final notifications = <void>[];
+          final controller = _MutableRegularWindowController(minimizable: true);
+          addTearDown(controller.dispose);
+          controller.addListener(() => notifications.add(null));
+
+          expect(controller.isMinimizable, isTrue);
+
+          controller.setMinimizable(false);
+          expect(controller.isMinimizable, isFalse);
+          expect(notifications, hasLength(1));
+        });
+
+        test('setMaximizable updates isMaximizable getter and notifies listeners', () {
+          final notifications = <void>[];
+          final controller = _MutableRegularWindowController(maximizable: true);
+          addTearDown(controller.dispose);
+          controller.addListener(() => notifications.add(null));
+
+          expect(controller.isMaximizable, isTrue);
+
+          controller.setMaximizable(false);
+          expect(controller.isMaximizable, isFalse);
+          expect(notifications, hasLength(1));
+        });
+
+        test('setResizable updates isResizable getter and notifies listeners', () {
+          final notifications = <void>[];
+          final controller = _MutableRegularWindowController(resizable: true);
+          addTearDown(controller.dispose);
+          controller.addListener(() => notifications.add(null));
+
+          expect(controller.isResizable, isTrue);
+
+          controller.setResizable(false);
+          expect(controller.isResizable, isFalse);
+          expect(notifications, hasLength(1));
+        });
+
+        test('all five flags can be toggled independently', () {
+          final controller = _MutableRegularWindowController(
+            titled: true,
+            closable: true,
+            minimizable: true,
+            maximizable: true,
+            resizable: true,
+          );
+          addTearDown(controller.dispose);
+
+          // Toggle each flag independently and verify isolation.
+          controller.setTitled(false);
+          expect(controller.isTitled, isFalse);
+          expect(controller.isClosable, isTrue);
+          expect(controller.isMinimizable, isTrue);
+          expect(controller.isMaximizable, isTrue);
+          expect(controller.isResizable, isTrue);
+
+          controller.setClosable(false);
+          expect(controller.isTitled, isFalse);
+          expect(controller.isClosable, isFalse);
+          expect(controller.isMinimizable, isTrue);
+          expect(controller.isMaximizable, isTrue);
+          expect(controller.isResizable, isTrue);
+
+          controller.setMinimizable(false);
+          expect(controller.isMinimizable, isFalse);
+          expect(controller.isMaximizable, isTrue);
+          expect(controller.isResizable, isTrue);
+
+          controller.setMaximizable(false);
+          expect(controller.isMaximizable, isFalse);
+          expect(controller.isResizable, isTrue);
+
+          controller.setResizable(false);
+          expect(controller.isResizable, isFalse);
+
+          // All false now — toggle all back to true.
+          controller.setTitled(true);
+          controller.setClosable(true);
+          controller.setMinimizable(true);
+          controller.setMaximizable(true);
+          controller.setResizable(true);
+
+          expect(controller.isTitled, isTrue);
+          expect(controller.isClosable, isTrue);
+          expect(controller.isMinimizable, isTrue);
+          expect(controller.isMaximizable, isTrue);
+          expect(controller.isResizable, isTrue);
+        });
+
+        test('flags can be toggled multiple times', () {
+          final controller = _MutableRegularWindowController(titled: true);
+          addTearDown(controller.dispose);
+          final notifications = <void>[];
+          controller.addListener(() => notifications.add(null));
+
+          expect(controller.isTitled, isTrue);
+
+          controller.setTitled(false);
+          expect(controller.isTitled, isFalse);
+
+          controller.setTitled(true);
+          expect(controller.isTitled, isTrue);
+
+          controller.setTitled(false);
+          expect(controller.isTitled, isFalse);
+
+          expect(notifications, hasLength(3));
+        });
+
+        // --- WindowScope reads correct initial values for non-default flags ---
+
+        testWidgets('WindowScope reads isTitled=false from controller', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubRegularWindowController(tester, titled: false);
+          addTearDown(controller.dispose);
+
+          bool? titled;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            RegularWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.isTitledOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isFalse);
+        });
+
+        testWidgets('WindowScope reads isClosable=false from controller', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubRegularWindowController(tester, closable: false);
+          addTearDown(controller.dispose);
+
+          bool? closable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            RegularWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  closable = WindowScope.isClosableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(closable, isFalse);
+        });
+
+        testWidgets('WindowScope reads isMinimizable=false from controller', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubRegularWindowController(tester, minimizable: false);
+          addTearDown(controller.dispose);
+
+          bool? minimizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            RegularWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  minimizable = WindowScope.isMinimizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(minimizable, isFalse);
+        });
+
+        testWidgets('WindowScope reads isMaximizable=false from controller', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubRegularWindowController(tester, maximizable: false);
+          addTearDown(controller.dispose);
+
+          bool? maximizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            RegularWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  maximizable = WindowScope.isMaximizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(maximizable, isFalse);
+        });
+
+        testWidgets('WindowScope reads isResizable=false from controller', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubRegularWindowController(tester, resizable: false);
+          addTearDown(controller.dispose);
+
+          bool? resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            RegularWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  resizable = WindowScope.isResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(resizable, isFalse);
+        });
+
+        // --- maybe variants return null without WindowScope ---
+
+        testWidgets('maybeIsTitledOf returns null when no WindowScope ancestor', (
+          WidgetTester tester,
+        ) async {
+          bool? result;
+          await tester.pumpWidget(
+            LookupBoundary(
+              child: Builder(
+                builder: (BuildContext context) {
+                  result = WindowScope.maybeIsTitledOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(result, isNull);
+        });
+
+        testWidgets('maybeIsClosableOf returns null when no WindowScope ancestor', (
+          WidgetTester tester,
+        ) async {
+          bool? result;
+          await tester.pumpWidget(
+            LookupBoundary(
+              child: Builder(
+                builder: (BuildContext context) {
+                  result = WindowScope.maybeIsClosableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(result, isNull);
+        });
+
+        testWidgets('maybeIsMinimizableOf returns null when no WindowScope ancestor', (
+          WidgetTester tester,
+        ) async {
+          bool? result;
+          await tester.pumpWidget(
+            LookupBoundary(
+              child: Builder(
+                builder: (BuildContext context) {
+                  result = WindowScope.maybeIsMinimizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(result, isNull);
+        });
+
+        testWidgets('maybeIsMaximizableOf returns null when no WindowScope ancestor', (
+          WidgetTester tester,
+        ) async {
+          bool? result;
+          await tester.pumpWidget(
+            LookupBoundary(
+              child: Builder(
+                builder: (BuildContext context) {
+                  result = WindowScope.maybeIsMaximizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(result, isNull);
+        });
+
+        testWidgets('maybeIsResizableOf returns null when no WindowScope ancestor', (
+          WidgetTester tester,
+        ) async {
+          bool? result;
+          await tester.pumpWidget(
+            LookupBoundary(
+              child: Builder(
+                builder: (BuildContext context) {
+                  result = WindowScope.maybeIsResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(result, isNull);
+        });
+      });
+
+      group('Decoration style flags for DialogWindow', () {
+        testWidgets('isResizableOf defaults to true for dialog', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubDialogWindowController(tester);
+          addTearDown(controller.dispose);
+
+          bool? resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            DialogWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  resizable = WindowScope.isResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(resizable, isTrue);
+        });
+
+        testWidgets('dialog can be created with resizable=false', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubDialogWindowController(tester, resizable: false);
+          addTearDown(controller.dispose);
+
+          bool? resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            DialogWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  resizable = WindowScope.isResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(resizable, isFalse);
+        });
+
+        test('setResizable updates isResizable getter and notifies listeners', () {
+          final notifications = <void>[];
+          final controller = _MutableDialogWindowController(resizable: true);
+          addTearDown(controller.dispose);
+          controller.addListener(() => notifications.add(null));
+
+          expect(controller.isResizable, isTrue);
+
+          controller.setResizable(false);
+          expect(controller.isResizable, isFalse);
+          expect(notifications, hasLength(1));
+
+          // Toggle back
+          controller.setResizable(true);
+          expect(controller.isResizable, isTrue);
+          expect(notifications, hasLength(2));
+        });
+
+        testWidgets('WindowScope reads dialog resizable=false', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubDialogWindowController(tester, resizable: false);
+          addTearDown(controller.dispose);
+
+          bool? resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            DialogWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  resizable = WindowScope.isResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(resizable, isFalse);
+        });
+
+        // Dialog always returns fixed values for flags it doesn't own
+        testWidgets('isTitledOf always returns true for dialog windows', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubDialogWindowController(tester);
+          addTearDown(controller.dispose);
+
+          bool? titled;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            DialogWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.isTitledOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isTrue);
+        });
+
+        testWidgets('isClosableOf always returns true for dialog windows', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubDialogWindowController(tester);
+          addTearDown(controller.dispose);
+
+          bool? closable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            DialogWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  closable = WindowScope.isClosableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(closable, isTrue);
+        });
+
+        testWidgets('isMinimizableOf always returns false for dialog windows', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubDialogWindowController(tester);
+          addTearDown(controller.dispose);
+
+          bool? minimizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            DialogWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  minimizable = WindowScope.isMinimizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(minimizable, isFalse);
+        });
+
+        testWidgets('isMaximizableOf always returns false for dialog windows', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubDialogWindowController(tester);
+          addTearDown(controller.dispose);
+
+          bool? maximizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            DialogWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  maximizable = WindowScope.isMaximizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(maximizable, isFalse);
+        });
+      });
+
+      group('Decoration style flags for non-configurable window types', () {
+        testWidgets('tooltip windows return false for all decoration flags', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubTooltipWindowController(tester: tester);
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            TooltipWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.isTitledOf(context);
+                  closable = WindowScope.isClosableOf(context);
+                  minimizable = WindowScope.isMinimizableOf(context);
+                  maximizable = WindowScope.isMaximizableOf(context);
+                  resizable = WindowScope.isResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isFalse);
+          expect(closable, isFalse);
+          expect(minimizable, isFalse);
+          expect(maximizable, isFalse);
+          expect(resizable, isFalse);
+        });
+
+        testWidgets('popup windows return false for all decoration flags', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubPopupWindowController(tester: tester);
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            PopupWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.isTitledOf(context);
+                  closable = WindowScope.isClosableOf(context);
+                  minimizable = WindowScope.isMinimizableOf(context);
+                  maximizable = WindowScope.isMaximizableOf(context);
+                  resizable = WindowScope.isResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isFalse);
+          expect(closable, isFalse);
+          expect(minimizable, isFalse);
+          expect(maximizable, isFalse);
+          expect(resizable, isFalse);
+        });
+
+        testWidgets('satellite windows return true for titled, closable, resizable and false for min/max', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubSatelliteWindowController(tester: tester);
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            SatelliteWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.isTitledOf(context);
+                  closable = WindowScope.isClosableOf(context);
+                  minimizable = WindowScope.isMinimizableOf(context);
+                  maximizable = WindowScope.isMaximizableOf(context);
+                  resizable = WindowScope.isResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isTrue);
+          expect(closable, isTrue);
+          expect(minimizable, isFalse);
+          expect(maximizable, isFalse);
+          expect(resizable, isTrue);
+        });
+      });
+
+      group('_WindowingOwnerUnsupported with new parameters', () {
+        test('createRegularWindowController with decoration flags still throws when windowing disabled', () {
+          isWindowingEnabled = false;
+          final WindowingOwner owner = createDefaultWindowingOwner();
+          expect(
+            () => owner.createRegularWindowController(
+              delegate: RegularWindowControllerDelegate(),
+              titled: false,
+              closable: false,
+              minimizable: false,
+              maximizable: false,
+              resizable: false,
+            ),
+            throwsUnsupportedError,
+          );
+        });
+
+        test('createDialogWindowController with resizable flag still throws when windowing disabled', () {
+          isWindowingEnabled = false;
+          final WindowingOwner owner = createDefaultWindowingOwner();
+          expect(
+            () => owner.createDialogWindowController(
+              delegate: DialogWindowControllerDelegate(),
+              resizable: false,
+            ),
+            throwsUnsupportedError,
+          );
+        });
       });
     });
   });
