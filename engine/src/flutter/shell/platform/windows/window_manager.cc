@@ -265,7 +265,7 @@ void SetWindowStyleFlag(HWND hwnd, LONG flag, bool set) {
 }
 
 bool GetWindowStyleFlag(HWND hwnd, LONG flag) {
-  return (GetWindowLong(hwnd, GWL_STYLE) & flag) != 0;
+  return (GetWindowLong(hwnd, GWL_STYLE) & flag) == flag;
 }
 
 }  // namespace

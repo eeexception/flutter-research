@@ -384,6 +384,9 @@ static void FlipRect(NSRect& rect, const NSRect& globalScreenFrame) {
     if (styleMask == 0) styleMask = NSWindowStyleMaskBorderless;
     window.styleMask = styleMask;
   }
+  if (request->maximizable) {
+    window.collectionBehavior |= NSWindowCollectionBehaviorFullScreenPrimary;
+  }
   if (request->has_size) {
     [window flutterSetContentSize:request->size];
   }
