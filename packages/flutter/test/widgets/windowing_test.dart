@@ -2401,6 +2401,166 @@ void main() {
 
           expect(result, isNull);
         });
+
+        // --- maybe*Of non-null paths (within a WindowScope) ---
+
+        testWidgets('maybe*Of returns values from RegularWindow scope', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubRegularWindowController(
+            tester, titled: false, closable: false, minimizable: false,
+            maximizable: false, resizable: false,
+          );
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            RegularWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.maybeIsTitledOf(context);
+                  closable = WindowScope.maybeIsClosableOf(context);
+                  minimizable = WindowScope.maybeIsMinimizableOf(context);
+                  maximizable = WindowScope.maybeIsMaximizableOf(context);
+                  resizable = WindowScope.maybeIsResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isFalse);
+          expect(closable, isFalse);
+          expect(minimizable, isFalse);
+          expect(maximizable, isFalse);
+          expect(resizable, isFalse);
+        });
+
+        testWidgets('maybe*Of returns fixed values from DialogWindow scope', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubDialogWindowController(tester, resizable: false);
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            DialogWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.maybeIsTitledOf(context);
+                  closable = WindowScope.maybeIsClosableOf(context);
+                  minimizable = WindowScope.maybeIsMinimizableOf(context);
+                  maximizable = WindowScope.maybeIsMaximizableOf(context);
+                  resizable = WindowScope.maybeIsResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isTrue);
+          expect(closable, isTrue);
+          expect(minimizable, isFalse);
+          expect(maximizable, isFalse);
+          expect(resizable, isFalse);
+        });
+
+        testWidgets('maybe*Of returns false from TooltipWindow scope', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubTooltipWindowController(tester: tester);
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            TooltipWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.maybeIsTitledOf(context);
+                  closable = WindowScope.maybeIsClosableOf(context);
+                  minimizable = WindowScope.maybeIsMinimizableOf(context);
+                  maximizable = WindowScope.maybeIsMaximizableOf(context);
+                  resizable = WindowScope.maybeIsResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isFalse);
+          expect(closable, isFalse);
+          expect(minimizable, isFalse);
+          expect(maximizable, isFalse);
+          expect(resizable, isFalse);
+        });
+
+        testWidgets('maybe*Of returns false from PopupWindow scope', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubPopupWindowController(tester: tester);
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            PopupWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.maybeIsTitledOf(context);
+                  closable = WindowScope.maybeIsClosableOf(context);
+                  minimizable = WindowScope.maybeIsMinimizableOf(context);
+                  maximizable = WindowScope.maybeIsMaximizableOf(context);
+                  resizable = WindowScope.maybeIsResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isFalse);
+          expect(closable, isFalse);
+          expect(minimizable, isFalse);
+          expect(maximizable, isFalse);
+          expect(resizable, isFalse);
+        });
+
+        testWidgets('maybe*Of returns fixed values from SatelliteWindow scope', (
+          WidgetTester tester,
+        ) async {
+          final controller = _StubSatelliteWindowController(tester: tester);
+          addTearDown(controller.dispose);
+
+          bool? titled, closable, minimizable, maximizable, resizable;
+          await tester.pumpWidget(
+            wrapWithView: false,
+            SatelliteWindow(
+              controller: controller,
+              child: Builder(
+                builder: (BuildContext context) {
+                  titled = WindowScope.maybeIsTitledOf(context);
+                  closable = WindowScope.maybeIsClosableOf(context);
+                  minimizable = WindowScope.maybeIsMinimizableOf(context);
+                  maximizable = WindowScope.maybeIsMaximizableOf(context);
+                  resizable = WindowScope.maybeIsResizableOf(context);
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+
+          expect(titled, isTrue);
+          expect(closable, isTrue);
+          expect(minimizable, isFalse);
+          expect(maximizable, isFalse);
+          expect(resizable, isTrue);
+        });
       });
 
       group('Decoration style flags for DialogWindow', () {
